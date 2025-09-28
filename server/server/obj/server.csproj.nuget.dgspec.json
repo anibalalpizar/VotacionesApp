@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\anibal\\Desktop\\VotacionesApp\\VotacionesApp\\server\\server\\server.csproj": {}
+    "C:\\Users\\nafat\\OneDrive\\Desktop\\U\\IIIC\\Calidad\\Proyecto\\VotacionesApp\\server\\server\\server.csproj": {}
   },
   "projects": {
-    "C:\\Users\\anibal\\Desktop\\VotacionesApp\\VotacionesApp\\server\\server\\server.csproj": {
+    "C:\\Users\\nafat\\OneDrive\\Desktop\\U\\IIIC\\Calidad\\Proyecto\\VotacionesApp\\server\\server\\server.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\anibal\\Desktop\\VotacionesApp\\VotacionesApp\\server\\server\\server.csproj",
+        "projectUniqueName": "C:\\Users\\nafat\\OneDrive\\Desktop\\U\\IIIC\\Calidad\\Proyecto\\VotacionesApp\\server\\server\\server.csproj",
         "projectName": "server",
-        "projectPath": "C:\\Users\\anibal\\Desktop\\VotacionesApp\\VotacionesApp\\server\\server\\server.csproj",
-        "packagesPath": "C:\\Users\\anibal\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\anibal\\Desktop\\VotacionesApp\\VotacionesApp\\server\\server\\obj\\",
+        "projectPath": "C:\\Users\\nafat\\OneDrive\\Desktop\\U\\IIIC\\Calidad\\Proyecto\\VotacionesApp\\server\\server\\server.csproj",
+        "packagesPath": "C:\\Users\\nafat\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\nafat\\OneDrive\\Desktop\\U\\IIIC\\Calidad\\Proyecto\\VotacionesApp\\server\\server\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\anibal\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\nafat\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -50,6 +50,28 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "BCrypt.Net-Next": {
+              "target": "Package",
+              "version": "[4.0.3, )"
+            },
+            "Microsoft.AspNetCore.Authentication.JwtBearer": {
+              "target": "Package",
+              "version": "[8.0.20, )"
+            },
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[9.0.9, )"
+            },
+            "Microsoft.EntityFrameworkCore.SqlServer": {
+              "target": "Package",
+              "version": "[9.0.9, )"
+            },
+            "Microsoft.EntityFrameworkCore.Tools": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[9.0.9, )"
+            },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
               "version": "[6.6.2, )"
@@ -74,7 +96,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.300/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

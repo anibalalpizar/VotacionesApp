@@ -1,15 +1,21 @@
-﻿namespace Server.Models
+﻿namespace Server.Models;
 
-public enum UserRole { ADMIN, VOTER}
+public enum UserRole { ADMIN, VOTER }
 
 public class User
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-    public string Identification { get; set; } = default!;
-    public string Email { get; set; } = default!;
-    public string PasswordHash { get; set; } = default!;
+    // PK según tu diagrama
+    public Guid UserId { get; set; } = Guid.NewGuid();
+
+    // Claves de negocio
+    public string Identification { get; set; } = null!;
+    public string FullName { get; set; } = null!;
+    public string Email { get; set; } = null!;
+
+    // Seguridad
+    public string PasswordHash { get; set; } = null!;
     public UserRole Role { get; set; } = UserRole.VOTER;
-    public bool IsActive { get; set; } = true;
+
+    // Auditoría mínima
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? LastLoginAt { get; set; }
 }

@@ -1,6 +1,4 @@
-﻿//HU2 - Registro de votantes
-
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Server.Data;
@@ -17,13 +15,15 @@ public class VotersController(AppDbContext db) : ControllerBase
     [HttpPost]
     public async Task<ActionResult<VoterResponse>> Create([FromBody] CreateVoterRequest req, CancellationToken ct)
     {
+        // duplicado por Identification
         var dup = await db.Users.AnyAsync(u => u.Identification == req.Identification, ct);
         if (dup) return Conflict(new { error = "Votante ya existe (identification duplicada)." });
 
         var user = new User
         {
             Identification = req.Identification,
-            Email = req.Email.ToLower(),
+            FullName = req.FullName.Trim(),
+            Email = req.Email.ToLower().Trim(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password),
             Role = UserRole.VOTER
         };
@@ -31,8 +31,9 @@ public class VotersController(AppDbContext db) : ControllerBase
         db.Users.Add(user);
         await db.SaveChangesAsync(ct);
 
-        return CreatedAtAction(nameof(GetById), new { id = user.Id },
-            new VoterResponse(user.Id, user.Identification, user.Email));
+        var res = new VoterResponse(user.UserId, user.Identification, user.FullName, user.Email, user.Role.ToString());
+        // CreatedAtAction opcional (si quieres mantener el GET)
+        return CreatedAtAction(nameof(GetById), new { id = user.UserId }, res);
     }
 
     [Authorize(Policy = "AdminOnly")]
@@ -41,6 +42,7 @@ public class VotersController(AppDbContext db) : ControllerBase
     {
         var u = await db.Users.FindAsync([id], ct);
         if (u is null) return NotFound();
-        return new VoterResponse(u.Id, u.Identification, u.Email);
+
+        return new VoterResponse(u.UserId, u.Identification, u.FullName, u.Email, u.Role.ToString());
     }
 }
