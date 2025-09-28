@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/server/.vs/server/*
+/server/.vs/server/CopilotIndices/*
+/server/server/obj/Debug/*
