@@ -8,13 +8,16 @@ export interface User {
 }
 
 export interface LoginRequest {
-  identification: string
-  password: string
+  UserOrEmail: string
+  Password: string
 }
 
 export interface LoginResponse {
-  success: boolean
-  message: string
-  user?: User
-  token?: string
+  token: string
+  role: string
+  expiresIn: number
+}
+
+export interface ErrorResponse {
+  error: string
 }
