@@ -32,6 +32,11 @@ public class VotersController(AppDbContext db) : ControllerBase
         if (duplicated)
             return Conflict(new { error = "Votante ya existe (identification duplicada)." });
 
+        //Duplicado por correo
+        bool duplicatedEmail = await db.Users.AnyAsync(u => u.Email == req.Email, ct);
+        if (duplicatedEmail)
+            return Conflict(new { error = "El correo digitado ya está en uso, por favor digite otro correo." });
+
         var user = new User
         {
             Identification = req.Identification.Trim(),

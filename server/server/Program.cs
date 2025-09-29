@@ -66,55 +66,17 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-//// Conexión a BD existente + seed admin si falta (SIN migraciones)
-//using (var scope = app.Services.CreateScope())
-//{
-//    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-//    // Verifica que puede conectar a tu SQL Server / appVotaciones
-//    if (!await db.Database.CanConnectAsync())
-//        throw new Exception("No se puede conectar a la base configurada. Revisa la cadena 'Default' en appsettings.");
-
-//    // Crea admin si no existe (no depende de migraciones)
-//    var adminEmail = "admin@utn.ac.cr";
-//    if (!await db.Users.AnyAsync(u => u.Email == adminEmail))
-//    {
-//        db.Users.Add(new User
-//        {
-//            Identification = "ADMIN-001",
-//            FullName = "Administrador del Sistema",
-//            Email = adminEmail,
-//            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
-//            Role = UserRole.ADMIN
-//        });
-//        await db.SaveChangesAsync();
-//        Console.WriteLine("Admin seeded: admin@utn.ac.cr / Admin123!");
-//    }
-//}
-
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    var cs = db.Database.GetDbConnection().ConnectionString;
-    Console.WriteLine($"[DB] ConnectionString: {cs}");
+    // Crea la BD y tablas según tus modelos si no existen
+    await db.Database.EnsureCreatedAsync();
 
-    try
-    {
-        var can = await db.Database.CanConnectAsync();
-        Console.WriteLine($"[DB] CanConnect: {can}");
-        if (!can) throw new Exception("No se puede conectar (CanConnect=false).");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine("[DB] ERROR al conectar:");
-        Console.WriteLine(ex.GetType().FullName);
-        Console.WriteLine(ex.Message);
-        Console.WriteLine(ex.InnerException?.Message);
-        throw; 
-    }
+    // (Opcional) ver qué cadena está usando
+    Console.WriteLine($"[DB] {db.Database.GetDbConnection().ConnectionString}");
 
-    // seed admin si falta
+    // Seed admin si no existe
     var adminEmail = "admin@utn.ac.cr";
     if (!await db.Users.AnyAsync(u => u.Email == adminEmail))
     {
@@ -127,9 +89,9 @@ using (var scope = app.Services.CreateScope())
             Role = UserRole.ADMIN
         });
         await db.SaveChangesAsync();
-        Console.WriteLine("Admin seeded: admin@utn.ac.cr / Admin123!");
     }
 }
+
 
 
 if (app.Environment.IsDevelopment())

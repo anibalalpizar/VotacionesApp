@@ -1,30 +1,59 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Server.Data;
-using Server.DTOs;
+using Server.Models.DTOs;
 using Server.Services;
 
 namespace Server.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(AppDbContext db, IJwtTokenService jwt) : ControllerBase
+public class AuthController : ControllerBase
 {
-    [HttpPost("login")]
-    public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest req, CancellationToken ct)
+    private readonly AppDbContext _db;
+    private readonly IJwtTokenService _jwt;
+
+    public AuthController(AppDbContext db, IJwtTokenService jwt)
     {
-        if (string.IsNullOrWhiteSpace(req.UserOrEmail) || string.IsNullOrWhiteSpace(req.Password))
-            return BadRequest(new { error = "UserOrEmail y Password son obligatorios." });
+        _db = db;
+        _jwt = jwt;
+    }
 
-        var user = await db.Users
-            .FirstOrDefaultAsync(u => u.Email == req.UserOrEmail || u.Identification == req.UserOrEmail, ct);
+    public class LoginRequest
+    {
+        public string UserOrEmail { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
 
-        if (user is null) return Unauthorized(new { error = "Credenciales inválidas." });
+    [HttpPost("login")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login([FromBody] LoginRequest req)
+    {
+        var user = await _db.Users
+            .FirstOrDefaultAsync(u => u.Email == req.UserOrEmail || u.Identification == req.UserOrEmail);
 
-        var ok = BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash);
-        if (!ok) return Unauthorized(new { error = "Credenciales inválidas." });
+        if (user is null || !BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash))
+            return Unauthorized(new { error = "Credenciales inválidas." });
 
-        var (token, exp) = jwt.Create(user);
-        return Ok(new LoginResponse(token, user.Role.ToString(), exp));
+        var token = _jwt.CreateToken(user);
+
+        var resp = new LoginResponse
+        {
+            Token = token,
+            ExpiresIn = _jwt.ExpiresInSeconds,
+            User = new UserDto
+            {
+                UserId = user.UserId,
+                Identification = user.Identification,
+                FullName = user.FullName,
+                Email = user.Email,
+                Role = user.Role.ToString()
+            }
+        };
+
+        return Ok(resp);
     }
 }
