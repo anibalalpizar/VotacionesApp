@@ -50,7 +50,7 @@ export default async function DashboardPage() {
         {/* Welcome Section */}
         <div className="space-y-2">
           <h2 className="text-3xl font-bold tracking-tight">
-            Bienvenido, {user?.fullName}
+            Bienvenido, {user?.fullName} {user?.role}
           </h2>
           <p className="text-muted-foreground">{config.description}</p>
         </div>
