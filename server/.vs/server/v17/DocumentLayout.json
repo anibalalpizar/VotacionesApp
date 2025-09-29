@@ -1,22 +1,38 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\nafat\\OneDrive\\Desktop\\U\\IIIC\\Calidad\\Proyecto\\VotacionesApp\\server\\",
+  "WorkspaceRootPath": "C:\\Users\\nafat\\OneDrive\\Desktop\\VotacionesApp\\server\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|c:\\users\\nafat\\onedrive\\desktop\\u\\iiic\\calidad\\proyecto\\votacionesapp\\server\\server\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|solutionrelative:server\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|c:\\users\\nafat\\onedrive\\desktop\\u\\iiic\\calidad\\proyecto\\votacionesapp\\server\\server\\appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
-      "RelativeMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|solutionrelative:server\\appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|c:\\users\\nafat\\onedrive\\desktop\\u\\iiic\\calidad\\proyecto\\votacionesapp\\server\\server\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "AbsoluteMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|c:\\users\\nafat\\onedrive\\desktop\\votacionesapp\\server\\server\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
       "RelativeMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|solutionrelative:server\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|c:\\users\\nafat\\onedrive\\desktop\\u\\iiic\\calidad\\proyecto\\votacionesapp\\server\\server\\services\\jwttokenservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|solutionrelative:server\\services\\jwttokenservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|c:\\users\\nafat\\onedrive\\desktop\\votacionesapp\\server\\server\\data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|solutionrelative:server\\data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|c:\\users\\nafat\\onedrive\\desktop\\votacionesapp\\server\\server\\models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|solutionrelative:server\\models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|c:\\users\\nafat\\onedrive\\desktop\\votacionesapp\\server\\server\\models\\auditlog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|solutionrelative:server\\models\\auditlog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|c:\\users\\nafat\\onedrive\\desktop\\votacionesapp\\server\\server\\models\\vote.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|solutionrelative:server\\models\\vote.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|c:\\users\\nafat\\onedrive\\desktop\\votacionesapp\\server\\server\\models\\election.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|solutionrelative:server\\models\\election.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|c:\\users\\nafat\\onedrive\\desktop\\votacionesapp\\server\\server\\models\\candidate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|solutionrelative:server\\models\\candidate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|c:\\users\\nafat\\onedrive\\desktop\\votacionesapp\\server\\server\\controllers\\voterscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{00A6355A-B557-49D6-AC02-3809E6080C87}|server\\server.csproj|solutionrelative:server\\controllers\\voterscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -26,59 +42,105 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "appsettings.Development.json",
-              "DocumentMoniker": "C:\\Users\\nafat\\OneDrive\\Desktop\\U\\IIIC\\Calidad\\Proyecto\\VotacionesApp\\server\\server\\appsettings.Development.json",
-              "RelativeDocumentMoniker": "server\\appsettings.Development.json",
-              "ToolTip": "C:\\Users\\nafat\\OneDrive\\Desktop\\U\\IIIC\\Calidad\\Proyecto\\VotacionesApp\\server\\server\\appsettings.Development.json",
-              "RelativeToolTip": "server\\appsettings.Development.json",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2025-09-28T05:00:40.096Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "appsettings.json",
-              "DocumentMoniker": "C:\\Users\\nafat\\OneDrive\\Desktop\\U\\IIIC\\Calidad\\Proyecto\\VotacionesApp\\server\\server\\appsettings.json",
-              "RelativeDocumentMoniker": "server\\appsettings.json",
-              "ToolTip": "C:\\Users\\nafat\\OneDrive\\Desktop\\U\\IIIC\\Calidad\\Proyecto\\VotacionesApp\\server\\server\\appsettings.json",
-              "RelativeToolTip": "server\\appsettings.json",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2025-09-28T05:00:13.314Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "Program.cs",
-              "DocumentMoniker": "C:\\Users\\nafat\\OneDrive\\Desktop\\U\\IIIC\\Calidad\\Proyecto\\VotacionesApp\\server\\server\\Program.cs",
-              "RelativeDocumentMoniker": "server\\Program.cs",
-              "ToolTip": "C:\\Users\\nafat\\OneDrive\\Desktop\\U\\IIIC\\Calidad\\Proyecto\\VotacionesApp\\server\\server\\Program.cs",
-              "RelativeToolTip": "server\\Program.cs",
-              "ViewState": "AgIAACcAAAAAAAAAAAAiwHEAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-09-28T04:54:37.541Z",
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\nafat\\OneDrive\\Desktop\\VotacionesApp\\server\\server\\appsettings.json",
+              "RelativeDocumentMoniker": "server\\appsettings.json",
+              "ToolTip": "C:\\Users\\nafat\\OneDrive\\Desktop\\VotacionesApp\\server\\server\\appsettings.json",
+              "RelativeToolTip": "server\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-09-29T02:46:07.796Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 3,
-              "Title": "JwtTokenService.cs",
-              "DocumentMoniker": "C:\\Users\\nafat\\OneDrive\\Desktop\\U\\IIIC\\Calidad\\Proyecto\\VotacionesApp\\server\\server\\Services\\JwtTokenService.cs",
-              "RelativeDocumentMoniker": "server\\Services\\JwtTokenService.cs",
-              "ToolTip": "C:\\Users\\nafat\\OneDrive\\Desktop\\U\\IIIC\\Calidad\\Proyecto\\VotacionesApp\\server\\server\\Services\\JwtTokenService.cs",
-              "RelativeToolTip": "server\\Services\\JwtTokenService.cs",
-              "ViewState": "AgIAAAgAAAAAAAAAAAAywDkAAAAAAAAAAAAAAA==",
+              "Title": "AuditLog.cs",
+              "DocumentMoniker": "C:\\Users\\nafat\\OneDrive\\Desktop\\VotacionesApp\\server\\server\\Models\\AuditLog.cs",
+              "RelativeDocumentMoniker": "server\\Models\\AuditLog.cs",
+              "ToolTip": "C:\\Users\\nafat\\OneDrive\\Desktop\\VotacionesApp\\server\\server\\Models\\AuditLog.cs",
+              "RelativeToolTip": "server\\Models\\AuditLog.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAA8AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-09-28T04:51:08.095Z",
+              "WhenOpened": "2025-09-29T01:54:29.57Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "AppDbContext.cs",
+              "DocumentMoniker": "C:\\Users\\nafat\\OneDrive\\Desktop\\VotacionesApp\\server\\server\\Data\\AppDbContext.cs",
+              "RelativeDocumentMoniker": "server\\Data\\AppDbContext.cs",
+              "ToolTip": "C:\\Users\\nafat\\OneDrive\\Desktop\\VotacionesApp\\server\\server\\Data\\AppDbContext.cs",
+              "RelativeToolTip": "server\\Data\\AppDbContext.cs",
+              "ViewState": "AgIAADYAAAAAAAAAAAAmwA0AAAA6AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-29T01:49:22.511Z",
               "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Election.cs",
+              "DocumentMoniker": "C:\\Users\\nafat\\OneDrive\\Desktop\\VotacionesApp\\server\\server\\Models\\Election.cs",
+              "RelativeDocumentMoniker": "server\\Models\\Election.cs",
+              "ToolTip": "C:\\Users\\nafat\\OneDrive\\Desktop\\VotacionesApp\\server\\server\\Models\\Election.cs",
+              "RelativeToolTip": "server\\Models\\Election.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAqAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-29T01:43:33.907Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "Candidate.cs",
+              "DocumentMoniker": "C:\\Users\\nafat\\OneDrive\\Desktop\\VotacionesApp\\server\\server\\Models\\Candidate.cs",
+              "RelativeDocumentMoniker": "server\\Models\\Candidate.cs",
+              "ToolTip": "C:\\Users\\nafat\\OneDrive\\Desktop\\VotacionesApp\\server\\server\\Models\\Candidate.cs",
+              "RelativeToolTip": "server\\Models\\Candidate.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-29T01:43:24.074Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Vote.cs",
+              "DocumentMoniker": "C:\\Users\\nafat\\OneDrive\\Desktop\\VotacionesApp\\server\\server\\Models\\Vote.cs",
+              "RelativeDocumentMoniker": "server\\Models\\Vote.cs",
+              "ToolTip": "C:\\Users\\nafat\\OneDrive\\Desktop\\VotacionesApp\\server\\server\\Models\\Vote.cs",
+              "RelativeToolTip": "server\\Models\\Vote.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAtAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-29T01:43:05.442Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "User.cs",
+              "DocumentMoniker": "C:\\Users\\nafat\\OneDrive\\Desktop\\VotacionesApp\\server\\server\\Models\\User.cs",
+              "RelativeDocumentMoniker": "server\\Models\\User.cs",
+              "ToolTip": "C:\\Users\\nafat\\OneDrive\\Desktop\\VotacionesApp\\server\\server\\Models\\User.cs",
+              "RelativeToolTip": "server\\Models\\User.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAA4AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-28T06:38:28.099Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "VotersController.cs",
+              "DocumentMoniker": "C:\\Users\\nafat\\OneDrive\\Desktop\\VotacionesApp\\server\\server\\Controllers\\VotersController.cs",
+              "RelativeDocumentMoniker": "server\\Controllers\\VotersController.cs",
+              "ToolTip": "C:\\Users\\nafat\\OneDrive\\Desktop\\VotacionesApp\\server\\server\\Controllers\\VotersController.cs",
+              "RelativeToolTip": "server\\Controllers\\VotersController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAEoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-28T06:33:05.101Z"
             }
           ]
         }

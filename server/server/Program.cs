@@ -2,14 +2,14 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models; // ?? necesario para Swagger con seguridad
+using Microsoft.OpenApi.Models;
 using Server.Data;
 using Server.Models;
 using Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// EF Core con SQL Server (LocalDB)
+// EF Core -> usa la cadena "Default" (apunta a tu appVotaciones en appsettings)
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
@@ -30,6 +30,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+// Autorización (solo ADMIN para registrar votantes)
 builder.Services.AddAuthorization(opt =>
 {
     opt.AddPolicy("AdminOnly", p => p.RequireRole(nameof(UserRole.ADMIN)));
@@ -40,65 +41,96 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// ?? Swagger con botón Authorize (Bearer JWT)
+// Swagger con botón Authorize (Bearer JWT)
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Votaciones API",
-        Version = "v1"
-    });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Votaciones API", Version = "v1" });
 
-    // Definición de seguridad tipo Bearer
     var securityScheme = new OpenApiSecurityScheme
     {
         Name = "Authorization",
-        Description = "Ingrese **Bearer** + espacio + su token JWT.\n\nEjemplo: `Bearer eyJhbGciOiJI...`",
+        Description = "Ingrese **Bearer** + espacio + su token JWT.\nEj: `Bearer eyJhbGciOi...`",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer",
         BearerFormat = "JWT",
-        Reference = new OpenApiReference
-        {
-            Type = ReferenceType.SecurityScheme,
-            Id = "Bearer"
-        }
+        Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
     };
 
     c.AddSecurityDefinition("Bearer", securityScheme);
-
-    // Requisito global: todos los endpoints pueden usar el esquema Bearer
-    var securityRequirement = new OpenApiSecurityRequirement
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         { securityScheme, Array.Empty<string>() }
-    };
-    c.AddSecurityRequirement(securityRequirement);
+    });
 });
 
 var app = builder.Build();
 
-// Migración automática + usuario admin seed
+//// Conexión a BD existente + seed admin si falta (SIN migraciones)
+//using (var scope = app.Services.CreateScope())
+//{
+//    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+//    // Verifica que puede conectar a tu SQL Server / appVotaciones
+//    if (!await db.Database.CanConnectAsync())
+//        throw new Exception("No se puede conectar a la base configurada. Revisa la cadena 'Default' en appsettings.");
+
+//    // Crea admin si no existe (no depende de migraciones)
+//    var adminEmail = "admin@utn.ac.cr";
+//    if (!await db.Users.AnyAsync(u => u.Email == adminEmail))
+//    {
+//        db.Users.Add(new User
+//        {
+//            Identification = "ADMIN-001",
+//            FullName = "Administrador del Sistema",
+//            Email = adminEmail,
+//            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
+//            Role = UserRole.ADMIN
+//        });
+//        await db.SaveChangesAsync();
+//        Console.WriteLine("Admin seeded: admin@utn.ac.cr / Admin123!");
+//    }
+//}
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.MigrateAsync();
 
-    // (Recomendado) sembrar admin si NO existe ese email
-    var adminEmail = "admin@utn.ac.cr";
-    if (!db.Users.Any(u => u.Email == adminEmail))
+    var cs = db.Database.GetDbConnection().ConnectionString;
+    Console.WriteLine($"[DB] ConnectionString: {cs}");
+
+    try
     {
-        db.Users.Add(new Server.Models.User
+        var can = await db.Database.CanConnectAsync();
+        Console.WriteLine($"[DB] CanConnect: {can}");
+        if (!can) throw new Exception("No se puede conectar (CanConnect=false).");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("[DB] ERROR al conectar:");
+        Console.WriteLine(ex.GetType().FullName);
+        Console.WriteLine(ex.Message);
+        Console.WriteLine(ex.InnerException?.Message);
+        throw; 
+    }
+
+    // seed admin si falta
+    var adminEmail = "admin@utn.ac.cr";
+    if (!await db.Users.AnyAsync(u => u.Email == adminEmail))
+    {
+        db.Users.Add(new User
         {
             Identification = "ADMIN-001",
             FullName = "Administrador del Sistema",
             Email = adminEmail,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
-            Role = Server.Models.UserRole.ADMIN
+            Role = UserRole.ADMIN
         });
         await db.SaveChangesAsync();
         Console.WriteLine("Admin seeded: admin@utn.ac.cr / Admin123!");
     }
 }
+
 
 if (app.Environment.IsDevelopment())
 {
@@ -107,7 +139,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
+
 app.Run();

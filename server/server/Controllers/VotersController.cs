@@ -11,19 +11,32 @@ namespace Server.Controllers;
 [Route("api/[controller]")]
 public class VotersController(AppDbContext db) : ControllerBase
 {
+    // POST: /api/voters
+    // Solo ADMIN puede registrar votantes
     [Authorize(Policy = "AdminOnly")]
     [HttpPost]
-    public async Task<ActionResult<VoterResponse>> Create([FromBody] CreateVoterRequest req, CancellationToken ct)
+    public async Task<ActionResult<VoterResponse>> Create(
+        [FromBody] CreateVoterRequest req,
+        CancellationToken ct)
     {
-        // duplicado por Identification
-        var dup = await db.Users.AnyAsync(u => u.Identification == req.Identification, ct);
-        if (dup) return Conflict(new { error = "Votante ya existe (identification duplicada)." });
+        if (string.IsNullOrWhiteSpace(req.Identification) ||
+            string.IsNullOrWhiteSpace(req.FullName) ||
+            string.IsNullOrWhiteSpace(req.Email) ||
+            string.IsNullOrWhiteSpace(req.Password))
+        {
+            return BadRequest(new { error = "Todos los campos son obligatorios." });
+        }
+
+        // Duplicado por identificación
+        bool duplicated = await db.Users.AnyAsync(u => u.Identification == req.Identification, ct);
+        if (duplicated)
+            return Conflict(new { error = "Votante ya existe (identification duplicada)." });
 
         var user = new User
         {
-            Identification = req.Identification,
+            Identification = req.Identification.Trim(),
             FullName = req.FullName.Trim(),
-            Email = req.Email.ToLower().Trim(),
+            Email = req.Email.Trim().ToLowerInvariant(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password),
             Role = UserRole.VOTER
         };
@@ -31,18 +44,31 @@ public class VotersController(AppDbContext db) : ControllerBase
         db.Users.Add(user);
         await db.SaveChangesAsync(ct);
 
-        var res = new VoterResponse(user.UserId, user.Identification, user.FullName, user.Email, user.Role.ToString());
-        // CreatedAtAction opcional (si quieres mantener el GET)
+        var res = new VoterResponse(
+            user.UserId,
+            user.Identification,
+            user.FullName,
+            user.Email,
+            user.Role.ToString());
+
+        // Devuelve 201 Created con la URL del recurso
         return CreatedAtAction(nameof(GetById), new { id = user.UserId }, res);
     }
 
+    // GET: /api/voters/{id}
+    // Útil para el CreatedAtAction y para validar que se creó
     [Authorize(Policy = "AdminOnly")]
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<VoterResponse>> GetById(Guid id, CancellationToken ct)
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<VoterResponse>> GetById(int id, CancellationToken ct)
     {
-        var u = await db.Users.FindAsync([id], ct);
+        var u = await db.Users.FirstOrDefaultAsync(x => x.UserId == id, ct);
         if (u is null) return NotFound();
 
-        return new VoterResponse(u.UserId, u.Identification, u.FullName, u.Email, u.Role.ToString());
+        return new VoterResponse(
+            u.UserId,
+            u.Identification,
+            u.FullName,
+            u.Email,
+            u.Role.ToString());
     }
 }

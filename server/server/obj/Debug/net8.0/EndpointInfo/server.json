@@ -112,8 +112,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "integer",
+              "format": "int32"
             }
           }
         ],
@@ -241,8 +241,8 @@
         "type": "object",
         "properties": {
           "userId": {
-            "type": "string",
-            "format": "uuid"
+            "type": "integer",
+            "format": "int32"
           },
           "identification": {
             "type": "string",
@@ -290,7 +290,7 @@
     "securitySchemes": {
       "Bearer": {
         "type": "apiKey",
-        "description": "Ingrese **Bearer** + espacio + su token JWT.\n\nEjemplo: `Bearer eyJhbGciOiJI...`",
+        "description": "Ingrese **Bearer** + espacio + su token JWT.\nEj: `Bearer eyJhbGciOi...`",
         "name": "Authorization",
         "in": "header"
       }
