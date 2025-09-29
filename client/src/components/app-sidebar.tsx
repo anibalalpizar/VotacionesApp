@@ -1,7 +1,7 @@
 "use client"
 
 import type * as React from "react"
-import { Frame, Map, PieChart, Settings2, SquareTerminal, Vote, Users, BarChart3 } from "lucide-react"
+import { Frame, Map, PieChart, Settings2, SquareTerminal, Vote, BarChart3, UserPlus } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
@@ -50,17 +50,17 @@ const data = {
       ],
     },
     {
-      title: "Candidatos",
+      title: "Votantes",
       url: "#",
-      icon: Users,
+      icon: UserPlus,
       items: [
+        {
+          title: "Registrar Votante",
+          url: "/dashboard/voters/register",
+        },
         {
           title: "Ver Candidatos",
           url: "/dashboard/candidates",
-        },
-        {
-          title: "Registrar Candidato",
-          url: "/dashboard/candidates/create",
         },
       ],
     },
@@ -89,23 +89,23 @@ const data = {
       icon: Settings2,
     },
   ],
-  // projects: [
-  //   {
-  //     name: "Elección Presidencial 2024",
-  //     url: "#",
-  //     icon: Frame,
-  //   },
-  //   {
-  //     name: "Elección Estudiantil",
-  //     url: "#",
-  //     icon: PieChart,
-  //   },
-  //   {
-  //     name: "Consulta Popular",
-  //     url: "#",
-  //     icon: Map,
-  //   },
-  // ],
+  projects: [
+    {
+      name: "Elección Presidencial 2024",
+      url: "#",
+      icon: Frame,
+    },
+    {
+      name: "Elección Estudiantil",
+      url: "#",
+      icon: PieChart,
+    },
+    {
+      name: "Consulta Popular",
+      url: "#",
+      icon: Map,
+    },
+  ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -116,7 +116,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        {/* <NavProjects projects={data.projects} /> */}
+        <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
