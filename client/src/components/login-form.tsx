@@ -5,13 +5,22 @@ import { toast } from "sonner"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { loginAction } from "@/lib/actions"
 import { Vote } from "lucide-react"
 
-export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
+export function LoginForm({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
   const [isLoading, setIsLoading] = useState(false)
 
   async function handleSubmit(formData: FormData) {
@@ -57,7 +66,9 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
       <Card>
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Iniciar Sesión</CardTitle>
-          <CardDescription>Ingrese sus credenciales para acceder al sistema</CardDescription>
+          <CardDescription>
+            Ingrese sus credenciales para acceder al sistema
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form action={handleSubmit}>
@@ -76,7 +87,14 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 
               <div className="grid gap-3">
                 <Label htmlFor="password">Contraseña</Label>
-                <Input id="password" name="password" type="password" required disabled={isLoading} />
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="********"
+                  required
+                  disabled={isLoading}
+                />
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
