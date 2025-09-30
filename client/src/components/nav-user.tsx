@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { logoutAction } from "@/lib/actions"
 
 export function NavUser({
@@ -37,6 +38,10 @@ export function NavUser({
   return (
     <SidebarMenu>
       <SidebarMenuItem>
+        <div className="flex items-center justify-between gap-2 px-2 py-1.5">
+          <span className="text-sm text-muted-foreground">Cambiar tema</span>
+          <ThemeToggle />
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
