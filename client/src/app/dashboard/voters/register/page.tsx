@@ -1,35 +1,33 @@
 "use client"
 
 import { useState } from "react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, UserPlus, CheckCircle, AlertCircle } from "lucide-react"
+import { Loader2, UserPlus } from "lucide-react"
 import { registerVoterAction } from "@/lib/actions"
 
 export default function RegisterVoterPage() {
   const [isLoading, setIsLoading] = useState(false)
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   async function handleSubmit(formData: FormData) {
     setIsLoading(true)
-    setMessage(null)
 
     try {
       const result = await registerVoterAction(formData)
 
       if (result.success) {
-        setMessage({ type: "success", text: result.message })
+        toast.success(result.message)
         // Reset form
         const form = document.getElementById("voter-form") as HTMLFormElement
         form?.reset()
       } else {
-        setMessage({ type: "error", text: result.message })
+        toast.error(result.message)
       }
     } catch (error) {
-      setMessage({ type: "error", text: "Error inesperado. Intente nuevamente." })
+      toast.error("Error inesperado. Intente nuevamente.")
     } finally {
       setIsLoading(false)
     }
@@ -55,21 +53,6 @@ export default function RegisterVoterPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {message && (
-            <Alert
-              className={`mb-6 ${message.type === "success" ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}
-            >
-              {message.type === "success" ? (
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-red-600" />
-              )}
-              <AlertDescription className={message.type === "success" ? "text-green-800" : "text-red-800"}>
-                {message.text}
-              </AlertDescription>
-            </Alert>
-          )}
-
           <form id="voter-form" action={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -118,12 +101,12 @@ export default function RegisterVoterPage() {
                 id="password"
                 name="password"
                 type="password"
-                placeholder="Mínimo 6 caracteres"
+                placeholder="********"
                 required
                 disabled={isLoading}
                 className="w-full"
               />
-              <p className="text-sm text-muted-foreground">La contraseña debe tener al menos 6 caracteres</p>
+              {/* <p className="text-sm text-muted-foreground">La contraseña debe tener al menos 6 caracteres</p> */}
             </div>
 
             <div className="flex gap-4 pt-4">
@@ -148,7 +131,6 @@ export default function RegisterVoterPage() {
                 onClick={() => {
                   const form = document.getElementById("voter-form") as HTMLFormElement
                   form?.reset()
-                  setMessage(null)
                 }}
               >
                 Limpiar
