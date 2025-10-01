@@ -9,7 +9,11 @@ interface AuthGuardProps {
   fallbackPath?: string
 }
 
-export async function AuthGuard({ children, requiredRole, fallbackPath = "/login" }: AuthGuardProps) {
+export async function AuthGuard({
+  children,
+  requiredRole,
+  fallbackPath = "/login",
+}: AuthGuardProps) {
   const user = await getCurrentUser()
 
   if (!user) {
@@ -17,13 +21,12 @@ export async function AuthGuard({ children, requiredRole, fallbackPath = "/login
   }
 
   if (requiredRole && user.role !== requiredRole) {
-    // Redirect based on user role as per HU-1 requirements
     if (user.role === "Admin") {
-      redirect("/dashboard") // Admin goes to main dashboard
+      redirect("/dashboard")
     } else if (user.role === "Voter") {
-      redirect("/dashboard") // Voter goes to main dashboard
+      redirect("/dashboard")
     } else {
-      redirect("/dashboard") // Auditor also goes to main dashboard
+      redirect("/dashboard")
     }
   }
 
