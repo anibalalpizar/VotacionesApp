@@ -3,7 +3,7 @@ export interface User {
   identification: string
   fullName: string
   email: string
-  role: "Admin" | "Voter" | "Auditor"
+  role: "ADMIN" | "VOTER" | "AUDITOR"
   createdAt: string
 }
 
