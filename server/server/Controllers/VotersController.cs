@@ -27,6 +27,19 @@ public class VotersController(AppDbContext db) : ControllerBase
             return BadRequest(new { error = "Todos los campos son obligatorios." });
         }
 
+        try
+        {
+            var mailAddress = new System.Net.Mail.MailAddress(req.Email);
+            if (mailAddress.Address != req.Email)
+            {
+                return BadRequest(new { error = "El formato del correo electrónico no es válido." });
+            }
+        }
+        catch
+        {
+            return BadRequest(new { error = "El formato del correo electrónico no es válido." });
+        }
+
         // Duplicado por identificación
         bool duplicated = await db.Users.AnyAsync(u => u.Identification == req.Identification, ct);
         if (duplicated)
