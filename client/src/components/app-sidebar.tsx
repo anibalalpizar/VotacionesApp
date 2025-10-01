@@ -1,21 +1,31 @@
 "use client"
 
 import type * as React from "react"
-import { Frame, Map, PieChart, Settings2, SquareTerminal, Vote, BarChart3, UserPlus } from "lucide-react"
+import {
+  Frame,
+  Map,
+  PieChart,
+  Settings2,
+  SquareTerminal,
+  Vote,
+  BarChart3,
+  UserPlus,
+} from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail } from "@/components/ui/sidebar"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarRail,
+} from "@/components/ui/sidebar"
+import { User } from "@/lib/types"
 
 // This is sample data.
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   teams: [
     {
       name: "Sistema de Votación UTN",
@@ -28,7 +38,6 @@ const data = {
       title: "Dashboard",
       url: "/dashboard",
       icon: SquareTerminal,
-      isActive: true,
     },
     {
       title: "Elecciones",
@@ -83,32 +92,19 @@ const data = {
         },
       ],
     },
-    {
-      title: "Configuración",
-      url: "/dashboard/settings",
-      icon: Settings2,
-    },
-  ],
-  projects: [
-    {
-      name: "Elección Presidencial 2024",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Elección Estudiantil",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Consulta Popular",
-      url: "#",
-      icon: Map,
-    },
   ],
 }
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  user: User
+}
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ user, ...props }: AppSidebarProps) {
+  const userData = {
+    name: user.fullName,
+    email: user.email,
+    avatar: "utn.jpg",
+  }
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -116,10 +112,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={userData} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

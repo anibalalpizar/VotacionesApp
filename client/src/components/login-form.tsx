@@ -15,7 +15,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { loginAction } from "@/lib/actions"
-import { Vote } from "lucide-react"
 
 export function LoginForm({
   className,
