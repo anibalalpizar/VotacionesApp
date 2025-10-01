@@ -66,6 +66,7 @@ const data = {
         {
           title: "Registrar Votante",
           url: "/dashboard/voters/register",
+          adminOnly: true, 
         },
         {
           title: "Ver Candidatos",
@@ -105,13 +106,28 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
     avatar: "utn.jpg",
   }
 
+  const filteredNavMain = data.navMain.map(section => {
+    if (section.items) {
+      return {
+        ...section,
+        items: section.items.filter(item => {
+          if (item.adminOnly && user.role !== "ADMIN") {
+            return false
+          }
+          return true
+        })
+      }
+    }
+    return section
+  })
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={filteredNavMain} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={userData} />
