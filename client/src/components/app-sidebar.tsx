@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/sidebar"
 import { User } from "@/lib/types"
 
-// This is sample data.
 const data = {
   teams: [
     {
