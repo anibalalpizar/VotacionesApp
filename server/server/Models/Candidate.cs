@@ -2,7 +2,7 @@
 
 public class Candidate
 {
-    public Guid CandidateId { get; set; } = Guid.NewGuid(); // GUID
+    public Guid CandidateId { get; set; } = Guid.NewGuid(); 
     public string Name { get; set; } = null!;
     public string? Party { get; set; }
 

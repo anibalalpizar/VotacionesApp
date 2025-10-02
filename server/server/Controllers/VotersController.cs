@@ -1,92 +1,156 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 using Server.Data;
-using Server.DTOs;
 using Server.Models;
+using Server.Models.DTOs;      // AdminCreateUserDto
+using Server.Services;         // IMailSender, IEmailDomainValidator
+using Server.Utils;            // PasswordGenerator
 
 namespace Server.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class VotersController(AppDbContext db) : ControllerBase
+public class VotersController : ControllerBase
 {
-    // POST: /api/voters
-    // Solo ADMIN puede registrar votantes
-    [Authorize(Policy = "AdminOnly")]
-    [HttpPost]
-    public async Task<ActionResult<VoterResponse>> Create(
-        [FromBody] CreateVoterRequest req,
-        CancellationToken ct)
+    private readonly AppDbContext _db;
+    private readonly IMailSender _email;
+    private readonly IEmailDomainValidator _emailValidator;
+
+    public VotersController(AppDbContext db, IMailSender email, IEmailDomainValidator emailValidator)
     {
-        if (string.IsNullOrWhiteSpace(req.Identification) ||
-            string.IsNullOrWhiteSpace(req.FullName) ||
-            string.IsNullOrWhiteSpace(req.Email) ||
-            string.IsNullOrWhiteSpace(req.Password))
-        {
-            return BadRequest(new { error = "Todos los campos son obligatorios." });
-        }
+        _db = db;
+        _email = email;
+        _emailValidator = emailValidator;
+    }
 
-        try
-        {
-            var mailAddress = new System.Net.Mail.MailAddress(req.Email);
-            if (mailAddress.Address != req.Email)
-            {
-                return BadRequest(new { error = "El formato del correo electrónico no es válido." });
-            }
-        }
-        catch
-        {
-            return BadRequest(new { error = "El formato del correo electrónico no es válido." });
-        }
+    /// Crear votante con contraseña temporal enviada al correo.
+    [HttpPost]
+    [Authorize(Roles = nameof(UserRole.ADMIN))]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Post([FromBody] AdminCreateUserDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
 
-        // Duplicado por identificación
-        bool duplicated = await db.Users.AnyAsync(u => u.Identification == req.Identification, ct);
-        if (duplicated)
-            return Conflict(new { error = "Votante ya existe (identification duplicada)." });
+        // Normalizar entradas
+        var identification = dto.Identification?.Trim() ?? "";
+        var fullName = dto.FullName?.Trim() ?? "";
+        var emailNorm = (dto.Email ?? "").Trim().ToLowerInvariant();
 
-        //Duplicado por correo
-        bool duplicatedEmail = await db.Users.AnyAsync(u => u.Email == req.Email, ct);
-        if (duplicatedEmail)
-            return Conflict(new { error = "El correo digitado ya está en uso, por favor digite otro correo." });
+        // 1. Validar formato de email
+        if (!new EmailAddressAttribute().IsValid(emailNorm))
+            return BadRequest(new { message = "El correo ingresado no tiene un formato válido, el votante no se ha creado." });
+
+        // 2. Validar dominio (MX)
+        if (!await _emailValidator.DomainHasMxAsync(emailNorm))
+            return BadRequest(new { message = "El dominio del correo no recibe emails, el votante no se ha creado." });
+
+        // 3. Validar duplicados
+        if (await _db.Users.AnyAsync(u => u.Identification == identification, ct))
+            return Conflict(new { message = "La identificación ya está en uso." });
+
+        if (await _db.Users.AnyAsync(u => u.Email == emailNorm, ct))
+            return Conflict(new { message = "El correo digitado ya está en uso, por favor digite otro correo." });
+
+        // 4. Generar contraseña temporal
+        var tempPlain = PasswordGenerator.New(10);
+        var tempHash = BCrypt.Net.BCrypt.HashPassword(tempPlain);
 
         var user = new User
         {
-            Identification = req.Identification.Trim(),
-            FullName = req.FullName.Trim(),
-            Email = req.Email.Trim().ToLowerInvariant(),
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password),
-            Role = UserRole.VOTER
+            Identification = identification,
+            FullName = fullName,
+            Email = emailNorm,
+            Role = UserRole.VOTER,
+            PasswordHash = string.Empty,     // vacío en primer uso
+            TemporalPassword = tempHash
         };
 
-        db.Users.Add(user);
-        await db.SaveChangesAsync(ct);
+        // 5. Transacción: guardar solo si el correo se envía bien
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            _db.Users.Add(user);
+            await _db.SaveChangesAsync(ct);
 
-        var res = new VoterResponse(
-            user.UserId,
-            user.Identification,
-            user.FullName,
-            user.Email,
-            user.Role.ToString());
+            // Intentar enviar correo
+            var body = $@"
+                <p>Hola {user.FullName},</p>
+                <p>Tu cuenta en la aplicación de votaciones de la UTN fue creada por un administrador.</p>
+                <p>Tu <b>contraseña temporal</b> es: <b>{tempPlain}</b></p>
+                <p>Por seguridad, inicia sesión con esta contraseña y cámbiala de inmediato.</p>
+            ";
+            await _email.SendAsync(user.Email, "Tu contraseña temporal", body);
 
-        // Devuelve 201 Created con la URL del recurso
-        return CreatedAtAction(nameof(GetById), new { id = user.UserId }, res);
+            await tx.CommitAsync(ct);
+
+            return CreatedAtAction(nameof(GetById), new { id = user.UserId }, new
+            {
+                userId = user.UserId,
+                identification = user.Identification,
+                fullName = user.FullName,
+                email = user.Email,
+                role = user.Role.ToString()
+            });
+        }
+        catch (Exception)
+        {
+            await tx.RollbackAsync(ct);
+            return BadRequest(new { message = "No se pudo enviar el correo. No se creó el usuario." });
+        }
     }
 
-    // GET: /api/voters/{id}
-    // Útil para el CreatedAtAction y para validar que se creó
-    [Authorize(Policy = "AdminOnly")]
+    /// Obtener usuario por Id
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<VoterResponse>> GetById(int id, CancellationToken ct)
+    [Authorize(Roles = nameof(UserRole.ADMIN))]
+    public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
-        var u = await db.Users.FirstOrDefaultAsync(x => x.UserId == id, ct);
-        if (u is null) return NotFound();
+        var u = await _db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == id, ct);
+        if (u == null) return NotFound();
 
-        return new VoterResponse(
-            u.UserId,
-            u.Identification,
-            u.FullName,
-            u.Email,
-            u.Role.ToString());
+        return Ok(new
+        {
+            userId = u.UserId,
+            identification = u.Identification,
+            fullName = u.FullName,
+            email = u.Email,
+            role = u.Role.ToString(),
+            createdAt = u.CreatedAt
+        });
+    }
+
+    /// Lista paginada de usuarios
+    [HttpGet]
+    [Authorize(Roles = nameof(UserRole.ADMIN))]
+    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
+    {
+        page = page < 1 ? 1 : page;
+        pageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
+
+        var query = _db.Users.AsNoTracking().OrderBy(u => u.UserId);
+
+        var total = await query.CountAsync(ct);
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(u => new
+            {
+                userId = u.UserId,
+                identification = u.Identification,
+                fullName = u.FullName,
+                email = u.Email,
+                role = u.Role.ToString(),
+                createdAt = u.CreatedAt
+            })
+            .ToListAsync(ct);
+
+        return Ok(new { page, pageSize, total, items });
     }
 }

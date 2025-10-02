@@ -43,7 +43,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
         });
 
-        // Candidates (FK -> Elections)  SIN CASCADA
+        // Candidates (FK -> Elections) 
         b.Entity<Candidate>(e =>
         {
             e.ToTable("Candidates");

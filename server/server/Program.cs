@@ -1,17 +1,20 @@
-using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Server.Data;
 using Server.Models;
 using Server.Services;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// EF Core -> usa la cadena "Default" (apunta a tu appVotaciones en appsettings)
 builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+
+builder.Services.AddScoped<IMailSender, SmtpMailSender>();
+builder.Services.AddSingleton<IEmailDomainValidator, EmailDomainValidator>();
 
 // Autenticación JWT
 var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!);
@@ -64,16 +67,20 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.Configure<SmtpOptions>(builder.Configuration.GetSection("Smtp"));
+builder.Services.AddScoped<IMailSender, SmtpMailSender>();
+
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    // Crea la BD y tablas según tus modelos si no existen
+    // Crea la BD y tablas si no existen
     await db.Database.EnsureCreatedAsync();
 
-    // (Opcional) ver qué cadena está usando
+    // Ver qué cadena está usando
     Console.WriteLine($"[DB] {db.Database.GetDbConnection().ConnectionString}");
 
     // Seed admin si no existe
