@@ -1,9 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using server.DTOs;
 using Server.Data;
 using Server.Models.DTOs;
 using Server.Services;
+using Server.Utils;
+using System.ComponentModel.DataAnnotations;
 
 namespace Server.Controllers;
 
@@ -13,11 +16,13 @@ public class AuthController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IJwtTokenService _jwt;
+    private readonly IMailSender _email;
 
-    public AuthController(AppDbContext db, IJwtTokenService jwt)
+    public AuthController(AppDbContext db, IJwtTokenService jwt, IMailSender email)
     {
         _db = db;
         _jwt = jwt;
+        _email = email;
     }
 
     private bool IsValidPassword(string password)
@@ -128,4 +133,61 @@ public class AuthController : ControllerBase
 
         return Ok(new { message = "Contraseña cambiada con éxito.", isFirstTime = false });
     }
+
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest req, CancellationToken ct)
+    {
+        var email = (req.Email ?? "").Trim().ToLowerInvariant();
+
+        // 1) Validar formato de email
+        if (!new EmailAddressAttribute().IsValid(email))
+            return BadRequest(new { message = "El correo ingresado no tiene un formato válido." });
+
+        // 2) Buscar usuario por email
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
+
+        // Por seguridad, no revelamos si existe o no el correo
+        if (user is null)
+            return Ok(new { message = "Si el correo existe, se enviará una contraseña temporal." });
+
+        // 3) Generar contraseña temporal
+        var tempPlain = PasswordGenerator.New(10);
+        var tempHash = BCrypt.Net.BCrypt.HashPassword(tempPlain);
+
+        // 4) Transacción: solo persistimos si el correo se envía bien
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            // Forzar primer login con temporal
+            user.PasswordHash = string.Empty;     // se limpia la contraseña oficial
+            user.TemporalPassword = tempHash; // se guarda solo el hash de la temporal
+
+            await _db.SaveChangesAsync(ct);
+
+            // 5) Enviar correo con la clave temporal
+            var body = $@"
+            <p>Hola {user.FullName},</p>
+            <p>Solicitaste recuperar tu contraseña.</p>
+            <p>Tu <b>contraseña temporal</b> es: <b>{tempPlain}</b></p>
+            <p>Inicia sesión con esta contraseña y cámbiala inmediatamente.</p>";
+
+            await _email.SendAsync(user.Email, "Recuperación de contraseña", body);
+
+            await tx.CommitAsync(ct);
+
+            // 6) Mensaje genérico para no dar pistas
+            return Ok(new { message = "Si el correo existe, se enviará una contraseña temporal." });
+        }
+        catch
+        {
+            await tx.RollbackAsync(ct);
+            // También respondemos genérico
+            return Ok(new { message = "Si el correo existe, se enviará una contraseña temporal." });
+        }
+    }
+
+
 }
