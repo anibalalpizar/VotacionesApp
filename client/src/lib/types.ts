@@ -5,6 +5,7 @@ export interface User {
   email: string
   role: "ADMIN" | "VOTER" | "AUDITOR"
   createdAt: string
+  isFirstTime?: boolean
 }
 
 export interface LoginRequest {
@@ -12,10 +13,19 @@ export interface LoginRequest {
   Password: string
 }
 
+export interface UserDto {
+  userId: number
+  identification: string
+  fullName: string
+  email: string
+  role: string
+  isFirstTime: boolean
+}
+
 export interface LoginResponse {
   token: string
-  role: string
   expiresIn: number
+  user: UserDto
 }
 
 export interface ErrorResponse {
