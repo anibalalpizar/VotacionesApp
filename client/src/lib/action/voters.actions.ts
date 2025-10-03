@@ -4,7 +4,6 @@ export interface VoterRegistrationRequest {
   identification: string
   fullName: string
   email: string
-  password: string
 }
 
 export interface VoterRegistrationResponse {
@@ -35,13 +34,11 @@ export async function registerVoterAction(formData: FormData) {
   const identification = formData.get("identification") as string
   const fullName = formData.get("fullName") as string
   const email = formData.get("email") as string
-  const password = formData.get("password") as string
 
   const voterData: VoterRegistrationRequest = {
     identification,
     fullName,
     email,
-    password,
   }
 
   try {
@@ -100,7 +97,8 @@ export async function registerVoterAction(formData: FormData) {
 
     return {
       success: true,
-      message: "Votante registrado exitosamente",
+      message:
+        "Votante registrado exitosamente. Se ha enviado una contraseña temporal por correo.",
       data: result,
     }
   } catch (error) {
