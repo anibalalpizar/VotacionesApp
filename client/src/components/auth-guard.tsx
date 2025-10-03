@@ -21,9 +21,9 @@ export async function AuthGuard({
   }
 
   if (requiredRole && user.role !== requiredRole) {
-    if (user.role === "Admin") {
+    if (user.role === "ADMIN") {
       redirect("/dashboard")
-    } else if (user.role === "Voter") {
+    } else if (user.role === "VOTER") {
       redirect("/dashboard")
     } else {
       redirect("/dashboard")
