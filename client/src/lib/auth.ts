@@ -27,6 +27,7 @@ export async function login(
         fullName: data.user.fullName,
         email: data.user.email,
         role: data.user.role,
+        isFirstTime: data.user.isFirstTime,
       }
 
       cookieStore.set("user-data", JSON.stringify(userData), {
@@ -90,6 +91,7 @@ export async function getCurrentUser(): Promise<User | null> {
       email: userData.email,
       role: userData.role as User["role"],
       createdAt: new Date().toISOString(),
+      isFirstTime: userData.isFirstTime,
     }
   } catch (error) {
     console.error("[v0] Get current user error:", error)
