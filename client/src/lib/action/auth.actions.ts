@@ -27,9 +27,18 @@ export async function loginAction(formData: FormData) {
   const result = await login(credentials)
   console.log("[v0] Login result:", result)
 
-  if (result.success) {
-    console.log("[v0] Login successful, redirecting to dashboard")
-    redirect("/dashboard")
+  if (result.success && result.data) {
+    const isFirstTime = result.data.user.isFirstTime
+    
+    console.log("[v0] Login successful, isFirstTime:", isFirstTime)
+    
+    if (isFirstTime) {
+      console.log("[v0] First time login, redirecting to change-temporal-password")
+      redirect("/change-temporal-password")
+    } else {
+      console.log("[v0] Normal login, redirecting to dashboard")
+      redirect("/dashboard")
+    }
   }
 
   console.log("[v0] Login failed, returning result:", result)
