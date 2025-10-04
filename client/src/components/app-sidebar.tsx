@@ -1,16 +1,7 @@
 "use client"
 
 import type * as React from "react"
-import {
-  Frame,
-  Map,
-  PieChart,
-  Settings2,
-  SquareTerminal,
-  Vote,
-  BarChart3,
-  UserPlus,
-} from "lucide-react"
+import { SquareTerminal, Vote, BarChart3, UserPlus } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
@@ -50,6 +41,7 @@ const data = {
         {
           title: "Crear Elección",
           url: "/dashboard/elections/create",
+          adminOnly: true,
         },
         {
           title: "Resultados",
@@ -61,15 +53,15 @@ const data = {
       title: "Votantes",
       url: "#",
       icon: UserPlus,
+      adminOnly: true,
       items: [
         {
           title: "Registrar Votante",
           url: "/dashboard/voters/register",
-          adminOnly: true, 
         },
         {
-          title: "Ver Candidatos",
-          url: "/dashboard/candidates",
+          title: "Ver Votantes",
+          url: "/dashboard/voters",
         },
       ],
     },
@@ -94,6 +86,7 @@ const data = {
     },
   ],
 }
+
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user: User
 }
@@ -105,20 +98,35 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
     avatar: "utn.jpg",
   }
 
-  const filteredNavMain = data.navMain.map(section => {
-    if (section.items) {
-      return {
-        ...section,
-        items: section.items.filter(item => {
-          if (item.adminOnly && user.role !== "ADMIN") {
-            return false
-          }
-          return true
-        })
+  const filteredNavMain = data.navMain
+    .filter((section) => {
+      if (
+        "adminOnly" in section &&
+        section.adminOnly &&
+        user.role !== "ADMIN"
+      ) {
+        return false
       }
-    }
-    return section
-  })
+      return true
+    })
+    .map((section) => {
+      if (section.items) {
+        return {
+          ...section,
+          items: section.items.filter((item) => {
+            if (
+              "adminOnly" in item &&
+              item.adminOnly &&
+              user.role !== "ADMIN"
+            ) {
+              return false
+            }
+            return true
+          }),
+        }
+      }
+      return section
+    })
 
   return (
     <Sidebar collapsible="icon" {...props}>

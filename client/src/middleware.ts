@@ -6,7 +6,9 @@ export function middleware(request: NextRequest) {
   const userDataCookie = request.cookies.get("user-data")
 
   const isAuthPage = request.nextUrl.pathname.startsWith("/login")
-  const isChangePasswordPage = request.nextUrl.pathname.startsWith("/change-temporal-password")
+  const isChangePasswordPage = request.nextUrl.pathname.startsWith(
+    "/change-temporal-password"
+  )
   const isProtectedPage =
     request.nextUrl.pathname.startsWith("/dashboard") ||
     request.nextUrl.pathname === "/"
@@ -25,19 +27,21 @@ export function middleware(request: NextRequest) {
 
       if (isFirstTime) {
         if (isProtectedPage || isAuthPage) {
-          return NextResponse.redirect(new URL("/change-temporal-password", request.url))
+          return NextResponse.redirect(
+            new URL("/change-temporal-password", request.url)
+          )
         }
       } else {
         if (isChangePasswordPage) {
           return NextResponse.redirect(new URL("/dashboard", request.url))
         }
-        
+
         if (isAuthPage) {
           return NextResponse.redirect(new URL("/dashboard", request.url))
         }
 
         const adminOnlyRoutes = [
-          "/dashboard/voters/register",
+          "/dashboard/voters",
           "/dashboard/elections/create",
         ]
 
