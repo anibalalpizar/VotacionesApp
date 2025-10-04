@@ -8,6 +8,9 @@ using Server.Models;
 using Server.Models.DTOs;      // AdminCreateUserDto
 using Server.Services;         // IMailSender, IEmailDomainValidator
 using Server.Utils;            // PasswordGenerator
+using Server.DTOs;
+
+
 
 namespace Server.Controllers;
 
@@ -153,4 +156,104 @@ public class VotersController : ControllerBase
 
         return Ok(new { page, pageSize, total, items });
     }
+
+    //Editar usuario
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = nameof(UserRole.ADMIN))]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateUserDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == id, ct);
+        if (user is null)
+            return NotFound(new { message = "Usuario no encontrado." });
+
+        // Normalizar
+        var identification = (dto.Identification ?? "").Trim();
+        var fullName = (dto.FullName ?? "").Trim();
+        var emailNorm = (dto.Email ?? "").Trim().ToLowerInvariant();
+
+        // Validaciones básicas
+        if (string.IsNullOrWhiteSpace(identification))
+            return BadRequest(new { message = "La identificación es requerida." });
+
+        if (string.IsNullOrWhiteSpace(fullName))
+            return BadRequest(new { message = "El nombre completo es requerido." });
+
+        if (!new EmailAddressAttribute().IsValid(emailNorm))
+            return BadRequest(new { message = "El correo ingresado no tiene un formato válido." });
+
+        // Duplicados (excluyendo al mismo usuario)
+        var idDup = await _db.Users.AnyAsync(u => u.UserId != id && u.Identification == identification, ct);
+        if (idDup)
+            return Conflict(new { message = "La identificación ya está en uso." });
+
+        var emailDup = await _db.Users.AnyAsync(u => u.UserId != id && u.Email == emailNorm, ct);
+        if (emailDup)
+            return Conflict(new { message = "El correo digitado ya está en uso, por favor digite otro correo." });
+
+        // Asignar cambios
+        user.Identification = identification;
+        user.FullName = fullName;
+        user.Email = emailNorm;
+
+        // Puede permitir cambiar rol si viene
+        if (!string.IsNullOrWhiteSpace(dto.Role))
+        {
+            if (!Enum.TryParse<UserRole>(dto.Role, true, out var newRole))
+                return BadRequest(new { message = "Rol inválido. Use ADMIN o VOTER." });
+
+            user.Role = newRole;
+        }
+
+        await _db.SaveChangesAsync(ct);
+
+        return Ok(new
+        {
+            message = "El usuario se ha editado con éxito.",
+            user = new
+            {
+                userId = user.UserId,
+                identification = user.Identification,
+                fullName = user.FullName,
+                email = user.Email,
+                role = user.Role.ToString(),
+                updatedAt = DateTime.UtcNow
+            }
+        });
+    }
+
+    //Borrar usuario
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = nameof(UserRole.ADMIN))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Delete(int id, CancellationToken ct)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == id, ct);
+        if (user is null)
+            return NotFound(new { message = "Usuario no encontrado." });
+
+        // Si el usuario tiene votos, no se borrar para no romper FKs
+        var hasVotes = await _db.Votes.AnyAsync(v => v.VoterId == id, ct);
+        if (hasVotes)
+            return Conflict(new { message = "No se puede borrar el usuario porque tiene votos registrados." });
+
+        _db.Users.Remove(user);
+        await _db.SaveChangesAsync(ct);
+
+        return Ok(new { message = "El usuario se ha borrado con éxito." });
+    }
+
+
 }
