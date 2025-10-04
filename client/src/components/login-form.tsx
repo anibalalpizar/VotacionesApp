@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { loginAction } from "@/lib/actions"
 import Image from "next/image"
+import { ForgotPasswordDialog } from "./forgot-password/ForgotPasswordDialog"
 
 export function LoginForm({
   className,
@@ -80,7 +81,10 @@ export function LoginForm({
               </div>
 
               <div className="grid gap-3">
-                <Label htmlFor="password">Contraseña</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Contraseña</Label>
+                  <ForgotPasswordDialog />
+                </div>
                 <div className="relative">
                   <Input
                     id="password"
