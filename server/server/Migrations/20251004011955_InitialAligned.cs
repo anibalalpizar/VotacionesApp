@@ -30,13 +30,15 @@ namespace server.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     Identification = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     FullName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Email = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Role = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    Role = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    TemporalPassword = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -49,7 +51,7 @@ namespace server.Migrations
                 {
                     CandidateId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Party = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    Group = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     ElectionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
@@ -68,7 +70,7 @@ namespace server.Migrations
                 columns: table => new
                 {
                     AuditId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<int>(type: "int", nullable: false),
                     Action = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Timestamp = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Details = table.Column<string>(type: "nvarchar(max)", nullable: true)
@@ -90,7 +92,7 @@ namespace server.Migrations
                 {
                     VoteId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ElectionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    VoterId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    VoterId = table.Column<int>(type: "int", nullable: false),
                     CandidateId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CastedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -123,9 +125,10 @@ namespace server.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Candidates_ElectionId",
+                name: "IX_Candidates_ElectionId_Name",
                 table: "Candidates",
-                column: "ElectionId");
+                columns: new[] { "ElectionId", "Name" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_Email",

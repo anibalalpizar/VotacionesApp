@@ -12,8 +12,8 @@ using Server.Data;
 namespace server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250928051950_InitialAligned")]
-    partial class InitialAligned
+    [Migration("20251004020328_Elections_AddUniqueIndexAndTweaks")]
+    partial class Elections_AddUniqueIndexAndTweaks
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,7 +25,7 @@ namespace server.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Server.Data.AuditLog", b =>
+            modelBuilder.Entity("Server.Models.AuditLog", b =>
                 {
                     b.Property<Guid>("AuditId")
                         .ValueGeneratedOnAdd()
@@ -42,8 +42,8 @@ namespace server.Migrations
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
 
                     b.HasKey("AuditId");
 
@@ -52,7 +52,7 @@ namespace server.Migrations
                     b.ToTable("AuditLog", (string)null);
                 });
 
-            modelBuilder.Entity("Server.Data.Candidate", b =>
+            modelBuilder.Entity("Server.Models.Candidate", b =>
                 {
                     b.Property<Guid>("CandidateId")
                         .ValueGeneratedOnAdd()
@@ -61,23 +61,25 @@ namespace server.Migrations
                     b.Property<Guid>("ElectionId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Group")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("Party")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
                     b.HasKey("CandidateId");
 
-                    b.HasIndex("ElectionId");
+                    b.HasIndex("ElectionId", "Name")
+                        .IsUnique();
 
                     b.ToTable("Candidates", (string)null);
                 });
 
-            modelBuilder.Entity("Server.Data.Election", b =>
+            modelBuilder.Entity("Server.Models.Election", b =>
                 {
                     b.Property<Guid>("ElectionId")
                         .ValueGeneratedOnAdd()
@@ -95,47 +97,24 @@ namespace server.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Status")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("ElectionId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.ToTable("Elections", (string)null);
                 });
 
-            modelBuilder.Entity("Server.Data.Vote", b =>
-                {
-                    b.Property<Guid>("VoteId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CandidateId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CastedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("ElectionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("VoterId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("VoteId");
-
-                    b.HasIndex("CandidateId");
-
-                    b.HasIndex("ElectionId");
-
-                    b.HasIndex("VoterId");
-
-                    b.ToTable("Votes", (string)null);
-                });
-
             modelBuilder.Entity("Server.Models.User", b =>
                 {
-                    b.Property<Guid>("UserId")
+                    b.Property<int>("UserId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -159,8 +138,13 @@ namespace server.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Role")
-                        .HasColumnType("int");
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TemporalPassword")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("UserId");
 
@@ -173,7 +157,36 @@ namespace server.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
-            modelBuilder.Entity("Server.Data.AuditLog", b =>
+            modelBuilder.Entity("Server.Models.Vote", b =>
+                {
+                    b.Property<Guid>("VoteId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CandidateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CastedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ElectionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("VoterId")
+                        .HasColumnType("int");
+
+                    b.HasKey("VoteId");
+
+                    b.HasIndex("CandidateId");
+
+                    b.HasIndex("ElectionId");
+
+                    b.HasIndex("VoterId");
+
+                    b.ToTable("Votes", (string)null);
+                });
+
+            modelBuilder.Entity("Server.Models.AuditLog", b =>
                 {
                     b.HasOne("Server.Models.User", "User")
                         .WithMany()
@@ -184,9 +197,9 @@ namespace server.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Server.Data.Candidate", b =>
+            modelBuilder.Entity("Server.Models.Candidate", b =>
                 {
-                    b.HasOne("Server.Data.Election", "Election")
+                    b.HasOne("Server.Models.Election", "Election")
                         .WithMany()
                         .HasForeignKey("ElectionId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -195,15 +208,15 @@ namespace server.Migrations
                     b.Navigation("Election");
                 });
 
-            modelBuilder.Entity("Server.Data.Vote", b =>
+            modelBuilder.Entity("Server.Models.Vote", b =>
                 {
-                    b.HasOne("Server.Data.Candidate", "Candidate")
+                    b.HasOne("Server.Models.Candidate", "Candidate")
                         .WithMany()
                         .HasForeignKey("CandidateId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Server.Data.Election", "Election")
+                    b.HasOne("Server.Models.Election", "Election")
                         .WithMany()
                         .HasForeignKey("ElectionId")
                         .OnDelete(DeleteBehavior.Restrict)
