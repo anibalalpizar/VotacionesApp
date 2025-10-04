@@ -31,3 +31,14 @@ export interface LoginResponse {
 export interface ErrorResponse {
   error: string
 }
+
+export interface ChangePasswordRequest {
+  userId: number
+  temporalPassword: string
+  newPassword: string
+}
+
+export interface ChangePasswordResponse {
+  message: string
+  isFirstTime: boolean
+}
