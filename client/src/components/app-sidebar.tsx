@@ -33,6 +33,7 @@ const data = {
       title: "Elecciones",
       url: "#",
       icon: Vote,
+      adminOnly: true,
       items: [
         {
           title: "Ver Elecciones",
@@ -40,12 +41,8 @@ const data = {
         },
         {
           title: "Crear Elección",
-          url: "/dashboard/elections/create",
+          url: "/dashboard/elections/register",
           adminOnly: true,
-        },
-        {
-          title: "Resultados",
-          url: "/dashboard/elections/results",
         },
       ],
     },
