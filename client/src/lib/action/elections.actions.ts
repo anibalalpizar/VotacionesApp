@@ -33,6 +33,23 @@ export interface GetAllElectionsResponse {
   }>
 }
 
+export interface UpdateElectionRequest {
+  name: string
+  startDateUtc: string
+  endDateUtc: string
+  status?: string
+}
+
+export interface UpdateElectionResponse {
+  electionId: string
+  name: string
+  startDateUtc: string
+  endDateUtc: string
+  status: string
+  candidateCount: number
+  voteCount: number
+}
+
 export async function createElectionAction(formData: FormData) {
   console.log(
     "[v0] createElectionAction called with formData:",
@@ -230,13 +247,16 @@ export async function getElectionByIdAction(electionId: string) {
     const API_BASE_URL =
       process.env.NEXT_PUBLIC_API_URL || "https://localhost:7290"
 
-    const response = await fetch(`${API_BASE_URL}/api/Elections/${electionId}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      cache: "no-store",
-    })
+    const response = await fetch(
+      `${API_BASE_URL}/api/Elections/${electionId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      }
+    )
 
     console.log("[v0] API response status:", response.status)
 
@@ -287,6 +307,187 @@ export async function getElectionByIdAction(electionId: string) {
     }
   } catch (error) {
     console.error("[v0] Network error during election fetch:", error)
+    return {
+      success: false,
+      message: "Error de conexión. Verifique su conexión a internet.",
+    }
+  }
+}
+
+export async function updateElectionAction(
+  electionId: string,
+  data: {
+    name: string
+    startDateUtc: string
+    endDateUtc: string
+    status: string
+  }
+) {
+  console.log(
+    "[v0] updateElectionAction called with electionId:",
+    electionId,
+    "data:",
+    data
+  )
+
+  const token = await getAuthToken()
+  if (!token) {
+    return {
+      success: false,
+      message:
+        "No tienes autorización para editar elecciones. Inicia sesión como administrador.",
+    }
+  }
+
+  const updateData: UpdateElectionRequest = {
+    name: data.name.trim(),
+    startDateUtc: data.startDateUtc,
+    endDateUtc: data.endDateUtc,
+    status: data.status,
+  }
+
+  try {
+    console.log("[v0] Sending election update request:", updateData)
+
+    const API_BASE_URL =
+      process.env.NEXT_PUBLIC_API_URL || "https://localhost:7290"
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/Elections/${electionId}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updateData),
+      }
+    )
+
+    console.log("[v0] API response status:", response.status)
+
+    if (!response.ok) {
+      let errorMessage = "Error al actualizar la elección. Intente nuevamente."
+
+      try {
+        const errorData = await response.json()
+        console.log("[v0] API error response:", errorData)
+
+        if (errorData.message) {
+          errorMessage = errorData.message
+        } else if (errorData.error) {
+          errorMessage = errorData.error
+        } else if (errorData.title) {
+          errorMessage = errorData.title
+        }
+      } catch (parseError) {
+        try {
+          const errorText = await response.text()
+          console.log("[v0] API error text:", errorText)
+          if (errorText) {
+            errorMessage = errorText
+          }
+        } catch {}
+      }
+
+      return {
+        success: false,
+        message: errorMessage,
+      }
+    }
+
+    const result: UpdateElectionResponse = await response.json()
+    console.log("[v0] Election update successful:", result)
+
+    return {
+      success: true,
+      message: "Elección actualizada exitosamente.",
+      data: result,
+    }
+  } catch (error) {
+    console.error("[v0] Network error during election update:", error)
+    return {
+      success: false,
+      message: "Error de conexión. Verifique su conexión a internet.",
+    }
+  }
+}
+
+export async function deleteElectionAction(electionId: string) {
+  console.log("[v0] deleteElectionAction called with electionId:", electionId)
+
+  const token = await getAuthToken()
+  if (!token) {
+    return {
+      success: false,
+      message:
+        "No tienes autorización para eliminar elecciones. Inicia sesión como administrador.",
+    }
+  }
+
+  try {
+    console.log(
+      "[v0] Sending election delete request for electionId:",
+      electionId
+    )
+
+    const API_BASE_URL =
+      process.env.NEXT_PUBLIC_API_URL || "https://localhost:7290"
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/Elections/${electionId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+
+    console.log("[v0] API response status:", response.status)
+
+    if (!response.ok) {
+      let errorMessage = "Error al eliminar la elección. Intente nuevamente."
+
+      if (response.status === 404) {
+        errorMessage = "Elección no encontrada."
+      } else {
+        try {
+          const errorData = await response.json()
+          console.log("[v0] API error response:", errorData)
+
+          if (errorData.message) {
+            errorMessage = errorData.message
+          } else if (errorData.error) {
+            errorMessage = errorData.error
+          } else if (errorData.title) {
+            errorMessage = errorData.title
+          }
+        } catch (parseError) {
+          try {
+            const errorText = await response.text()
+            console.log("[v0] API error text:", errorText)
+            if (errorText) {
+              errorMessage = errorText
+            }
+          } catch {}
+        }
+      }
+
+      return {
+        success: false,
+        message: errorMessage,
+      }
+    }
+
+    console.log("[v0] Election deletion successful")
+
+    return {
+      success: true,
+      message: "Elección eliminada exitosamente.",
+    }
+  } catch (error) {
+    console.error("[v0] Network error during election deletion:", error)
     return {
       success: false,
       message: "Error de conexión. Verifique su conexión a internet.",
