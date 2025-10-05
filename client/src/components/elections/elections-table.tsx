@@ -49,6 +49,9 @@ import {
 
 import { cn } from "@/lib/utils"
 import { getAllElectionsAction, getElectionByIdAction } from "@/lib/actions"
+import { ViewElectionDialog } from "@/components/elections/view-election-dialog"
+import { EditElectionDialog } from "@/components/elections/edit-election-dialog"
+import { DeleteElectionDialog } from "@/components/elections/delete-election-dialog"
 
 declare module "@tanstack/react-table" {
   interface ColumnMeta<TData, TValue> {
@@ -153,6 +156,16 @@ export function ElectionsTable() {
     pageSize: 20,
     total: 0,
   })
+  const [selectedElectionId, setSelectedElectionId] = useState<string | null>(
+    null
+  )
+  const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [selectedElectionForEdit, setSelectedElectionForEdit] =
+    useState<Election | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [selectedElectionForDelete, setSelectedElectionForDelete] =
+    useState<Election | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const columns: ColumnDef<Election>[] = useMemo(
     () => [
@@ -272,13 +285,18 @@ export function ElectionsTable() {
                       onClick={async () => {
                         setIsLoadingElection(true)
                         try {
-                          const result = await getElectionByIdAction(election.electionId)
-                          
+                          const result = await getElectionByIdAction(
+                            election.electionId
+                          )
+
                           if (result.success && result.data) {
-                            // Aquí abrir dialog de vista
-                            toast.success("Funcionalidad de vista pendiente")
+                            setSelectedElectionId(election.electionId)
+                            setViewDialogOpen(true)
                           } else {
-                            toast.error(result.message || "Error al cargar detalles de la elección")
+                            toast.error(
+                              result.message ||
+                                "Error al cargar detalles de la elección"
+                            )
                           }
                         } catch (error) {
                           toast.error("Error de conexión al cargar detalles")
@@ -308,8 +326,27 @@ export function ElectionsTable() {
                       size="icon"
                       className="h-8 w-8"
                       disabled={isLoadingElection}
-                      onClick={() => {
-                        toast.success("Funcionalidad de edición pendiente")
+                      onClick={async () => {
+                        setIsLoadingElection(true)
+                        try {
+                          const result = await getElectionByIdAction(
+                            election.electionId
+                          )
+
+                          if (result.success && result.data) {
+                            setSelectedElectionForEdit(result.data)
+                            setEditDialogOpen(true)
+                          } else {
+                            toast.error(
+                              result.message ||
+                                "Error al cargar datos de la elección"
+                            )
+                          }
+                        } catch (error) {
+                          toast.error("Error de conexión al cargar datos")
+                        } finally {
+                          setIsLoadingElection(false)
+                        }
                       }}
                     >
                       <Pencil className="h-4 w-4" />
@@ -329,7 +366,8 @@ export function ElectionsTable() {
                       size="icon"
                       className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                       onClick={() => {
-                        toast.success("Funcionalidad de eliminación pendiente")
+                        setSelectedElectionForDelete(election)
+                        setDeleteDialogOpen(true)
                       }}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -468,9 +506,7 @@ export function ElectionsTable() {
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4 py-4 border-t">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              Mostrar
-            </span>
+            <span className="text-sm text-muted-foreground">Mostrar</span>
             <Select
               value={pagination.pageSize.toString()}
               onValueChange={(value) => {
@@ -498,7 +534,8 @@ export function ElectionsTable() {
 
           <div className="flex items-center gap-4">
             <div className="text-sm text-muted-foreground">
-              Página {pagination.page} de {totalPages || 1} ({pagination.total} total)
+              Página {pagination.page} de {totalPages || 1} ({pagination.total}{" "}
+              total)
             </div>
             <div className="flex gap-2">
               <Button
@@ -525,6 +562,25 @@ export function ElectionsTable() {
           </div>
         </div>
       </div>
+      <ViewElectionDialog
+        electionId={selectedElectionId}
+        open={viewDialogOpen}
+        onOpenChange={setViewDialogOpen}
+      />
+
+      <EditElectionDialog
+        election={selectedElectionForEdit}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSuccess={loadElections}
+      />
+
+      <DeleteElectionDialog
+        election={selectedElectionForDelete}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onSuccess={loadElections}
+      />
     </div>
   )
 }
