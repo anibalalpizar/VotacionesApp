@@ -7,8 +7,8 @@ import { Label } from "../ui/label"
 import { Alert, AlertDescription } from "../ui/alert"
 import { useState } from "react"
 import StepIndicator from "./StepIndicator"
-import { changePasswordAction } from "@/lib/action/reset-password.actions"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { changePasswordAction } from "@/lib/actions"
 
 function CreateNewPassword({
   onNext,
