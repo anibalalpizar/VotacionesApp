@@ -20,10 +20,10 @@ public class ElectionsController : ControllerBase
     }
 
     private static string NormalizeStatus(string? s)
-        => string.IsNullOrWhiteSpace(s) ? "Draft" : s.Trim();
+        => string.IsNullOrWhiteSpace(s) ? "Schedule" : s.Trim();
 
     private static bool IsValidStatus(string s)
-        => s is "Draft" or "Active" or "Closed";
+        => s is "Schedule" or "Active" or "Closed";
 
     private static ElectionDto ToDto(Election e, int candidateCount, int voteCount)
         => new()
@@ -32,7 +32,7 @@ public class ElectionsController : ControllerBase
             Name = e.Name,
             StartDateUtc = e.StartDate ?? DateTime.MinValue,
             EndDateUtc = e.EndDate ?? DateTime.MinValue,
-            Status = e.Status ?? "Draft",
+            Status = e.Status ?? "Schedule",
             CandidateCount = candidateCount,
             VoteCount = voteCount
         };
@@ -74,7 +74,7 @@ public class ElectionsController : ControllerBase
             Name = name,
             StartDate = dto.StartDateUtc,
             EndDate = dto.EndDateUtc,
-            Status = "Draft"
+            Status = "Schedule"
         };
 
         _db.Elections.Add(entity);
@@ -111,7 +111,7 @@ public class ElectionsController : ControllerBase
                                Name = g.Key.Name,
                                StartDateUtc = g.Key.StartDate ?? DateTime.MinValue,
                                EndDateUtc = g.Key.EndDate ?? DateTime.MinValue,
-                               Status = g.Key.Status ?? "Draft",
+                               Status = g.Key.Status ?? "Schedule",
                                CandidateCount = g.Count(x => x.c != null),
                                VoteCount = g.Count(x => x.v != null)
                            })
@@ -140,8 +140,8 @@ public class ElectionsController : ControllerBase
 
     // PUT: /api/elections/{id} (actualizar)
     // Reglas:
-    // - Solo se permite editar fechas si Status actual = "Draft".
-    // - Status permitido: Draft | Active | Closed
+    // - Solo se permite editar fechas si Status actual = "Schedule".
+    // - Status permitido: Schedule | Active | Closed
     [HttpPut("{id:int}")]
     [ProducesResponseType(typeof(ElectionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -161,12 +161,12 @@ public class ElectionsController : ControllerBase
         if (dup)
             return Conflict(new { message = "Ya existe otra elección con ese nombre." });
 
-        var newStatus = NormalizeStatus(dto.Status ?? e.Status ?? "Draft");
+        var newStatus = NormalizeStatus(dto.Status ?? e.Status ?? "Schedule");
         if (!IsValidStatus(newStatus))
-            return BadRequest(new { message = "Estado inválido. Use 'Draft', 'Active' o 'Closed'." });
+            return BadRequest(new { message = "Estado inválido. Use 'Schedule', 'Active' o 'Closed'." });
 
-        // Si está en Draft, se pueden editar fechas
-        if ((e.Status ?? "Draft") == "Draft")
+        // Si está en DraScheduleft, se pueden editar fechas
+        if ((e.Status ?? "Schedule") == "Schedule")
         {
             var dateError = ValidateDates(dto.StartDateUtc, dto.EndDateUtc);
             if (dateError is not null)
