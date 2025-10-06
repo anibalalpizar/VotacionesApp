@@ -15,12 +15,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     {
         base.OnModelCreating(b);
 
-        //Users 
+        // Users
         b.Entity<User>(e =>
         {
             e.ToTable("Users");
             e.HasKey(x => x.UserId);
-            e.Property(x => x.UserId).ValueGeneratedOnAdd();
+            e.Property(x => x.UserId).ValueGeneratedOnAdd(); 
 
             e.HasIndex(x => x.Identification).IsUnique();
             e.HasIndex(x => x.Email).IsUnique();
@@ -28,90 +28,90 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.Identification).HasMaxLength(50).IsRequired();
             e.Property(x => x.FullName).HasMaxLength(200).IsRequired();
             e.Property(x => x.Email).HasMaxLength(200).IsRequired();
-
-            // PasswordHash requerido
             e.Property(x => x.PasswordHash).IsRequired();
 
             e.Property(x => x.Role)
-             .HasConversion<string>()
-             .HasMaxLength(20)
-             .IsRequired();
+                .HasConversion<string>()
+                .HasMaxLength(20)
+                .IsRequired();
         });
 
-        //Elections
+        // Elections
         b.Entity<Election>(e =>
         {
-            e.ToTable("Elections");
+            e.ToTable("Elections", tb =>
+            {
+                // EF Core 8+: define el check aquí
+                tb.HasCheckConstraint(
+                    "CK_Elections_Dates",
+                    "[StartDate] IS NULL OR [EndDate] IS NULL OR [StartDate] <= [EndDate]");
+            });
+
             e.HasKey(x => x.ElectionId);
-
+            e.Property(x => x.ElectionId).ValueGeneratedOnAdd();
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
-
-            // Nombre de elección único
             e.HasIndex(x => x.Name).IsUnique();
-
-            // Campos de periodo 
-            // Estado con tamaño controlado
             e.Property(x => x.Status).HasMaxLength(20);
         });
 
-        // Candidates (FK -> Elections) 
-        // - Agrupación-partido requerido (Group)
-        // - Índice único (ElectionId, Name) para evitar duplicados por elección
+
+        // Candidates (PK int, FK -> Elections int)
         b.Entity<Candidate>(e =>
         {
             e.ToTable("Candidates");
             e.HasKey(x => x.CandidateId);
+            e.Property(x => x.CandidateId).ValueGeneratedOnAdd();   
 
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
-            e.Property(x => x.Group).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Group).HasMaxLength(200).IsRequired();  
 
             e.HasOne(x => x.Election)
-             .WithMany()
-             .HasForeignKey(x => x.ElectionId)
-             .OnDelete(DeleteBehavior.NoAction);
+                .WithMany()
+                .HasForeignKey(x => x.ElectionId)
+                .OnDelete(DeleteBehavior.NoAction);
 
+            // Evita dos candidatos con el mismo nombre dentro de la misma elección
             e.HasIndex(x => new { x.ElectionId, x.Name }).IsUnique();
         });
 
-        //Votes (FKs -> Elections, Users, Candidates) 
+        // Votes (todo int)
         b.Entity<Vote>(e =>
         {
             e.ToTable("Votes");
             e.HasKey(x => x.VoteId);
+            e.Property(x => x.VoteId).ValueGeneratedOnAdd();      
 
             e.HasOne(x => x.Voter)
-             .WithMany()
-             .HasForeignKey(x => x.VoterId)
-             .OnDelete(DeleteBehavior.NoAction);
+                .WithMany()
+                .HasForeignKey(x => x.VoterId)
+                .OnDelete(DeleteBehavior.NoAction);
 
             e.HasOne(x => x.Election)
-             .WithMany()
-             .HasForeignKey(x => x.ElectionId)
-             .OnDelete(DeleteBehavior.NoAction);
+                .WithMany()
+                .HasForeignKey(x => x.ElectionId)
+                .OnDelete(DeleteBehavior.NoAction);
 
             e.HasOne(x => x.Candidate)
-             .WithMany()
-             .HasForeignKey(x => x.CandidateId)
-             .OnDelete(DeleteBehavior.NoAction);
+                .WithMany()
+                .HasForeignKey(x => x.CandidateId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
 
-        //AuditLog (FK -> Users) 
+        // AuditLog (FK -> Users)
         b.Entity<AuditLog>(e =>
         {
             e.ToTable("AuditLog");
             e.HasKey(x => x.AuditId);
-
+            e.Property(x => x.AuditId).ValueGeneratedOnAdd();    
             e.Property(x => x.Action).HasMaxLength(200).IsRequired();
 
             e.HasOne(x => x.User)
-             .WithMany()
-             .HasForeignKey(x => x.UserId)
-             .OnDelete(DeleteBehavior.NoAction);
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
 
         foreach (var fk in b.Model.GetEntityTypes().SelectMany(t => t.GetForeignKeys()))
-        {
             fk.DeleteBehavior = DeleteBehavior.Restrict;
-        }
     }
 }

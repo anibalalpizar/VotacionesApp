@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace server.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialAligned : Migration
+    public partial class Init_Elections_IntIds : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,15 +15,17 @@ namespace server.Migrations
                 name: "Elections",
                 columns: table => new
                 {
-                    ElectionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ElectionId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Status = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Elections", x => x.ElectionId);
+                    table.CheckConstraint("CK_Elections_Dates", "[StartDate] IS NULL OR [EndDate] IS NULL OR [StartDate] <= [EndDate]");
                 });
 
             migrationBuilder.CreateTable(
@@ -49,10 +51,11 @@ namespace server.Migrations
                 name: "Candidates",
                 columns: table => new
                 {
-                    CandidateId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CandidateId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Group = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    ElectionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    ElectionId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -90,10 +93,11 @@ namespace server.Migrations
                 name: "Votes",
                 columns: table => new
                 {
-                    VoteId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ElectionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    VoteId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ElectionId = table.Column<int>(type: "int", nullable: false),
                     VoterId = table.Column<int>(type: "int", nullable: false),
-                    CandidateId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CandidateId = table.Column<int>(type: "int", nullable: false),
                     CastedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
@@ -128,6 +132,12 @@ namespace server.Migrations
                 name: "IX_Candidates_ElectionId_Name",
                 table: "Candidates",
                 columns: new[] { "ElectionId", "Name" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Elections_Name",
+                table: "Elections",
+                column: "Name",
                 unique: true);
 
             migrationBuilder.CreateIndex(

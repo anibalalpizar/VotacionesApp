@@ -2,10 +2,10 @@
 
 public class Vote
 {
-    public Guid VoteId { get; set; } = Guid.NewGuid();
-    public Guid ElectionId { get; set; }
+    public int VoteId { get; set; }
+    public int ElectionId { get; set; }
     public int VoterId { get; set; }         
-    public Guid CandidateId { get; set; }
+    public int CandidateId { get; set; }
     public DateTime CastedAt { get; set; } = DateTime.UtcNow;
 
     public Election? Election { get; set; }

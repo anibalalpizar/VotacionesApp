@@ -12,8 +12,8 @@ using Server.Data;
 namespace server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251004020328_Elections_AddUniqueIndexAndTweaks")]
-    partial class Elections_AddUniqueIndexAndTweaks
+    [Migration("20251006004231_Init_Elections_IntIds")]
+    partial class Init_Elections_IntIds
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -54,12 +54,14 @@ namespace server.Migrations
 
             modelBuilder.Entity("Server.Models.Candidate", b =>
                 {
-                    b.Property<Guid>("CandidateId")
+                    b.Property<int>("CandidateId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
 
-                    b.Property<Guid>("ElectionId")
-                        .HasColumnType("uniqueidentifier");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CandidateId"));
+
+                    b.Property<int>("ElectionId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Group")
                         .IsRequired()
@@ -81,9 +83,11 @@ namespace server.Migrations
 
             modelBuilder.Entity("Server.Models.Election", b =>
                 {
-                    b.Property<Guid>("ElectionId")
+                    b.Property<int>("ElectionId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ElectionId"));
 
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("datetime2");
@@ -105,7 +109,10 @@ namespace server.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Elections", (string)null);
+                    b.ToTable("Elections", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Elections_Dates", "[StartDate] IS NULL OR [EndDate] IS NULL OR [StartDate] <= [EndDate]");
+                        });
                 });
 
             modelBuilder.Entity("Server.Models.User", b =>
@@ -159,18 +166,20 @@ namespace server.Migrations
 
             modelBuilder.Entity("Server.Models.Vote", b =>
                 {
-                    b.Property<Guid>("VoteId")
+                    b.Property<int>("VoteId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
 
-                    b.Property<Guid>("CandidateId")
-                        .HasColumnType("uniqueidentifier");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VoteId"));
+
+                    b.Property<int>("CandidateId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CastedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("ElectionId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("ElectionId")
+                        .HasColumnType("int");
 
                     b.Property<int>("VoterId")
                         .HasColumnType("int");

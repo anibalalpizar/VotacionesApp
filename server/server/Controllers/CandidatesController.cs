@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 using Server.Data;
 using Server.Models;
+using Server.DTOs;
 
 namespace Server.Controllers;
 
@@ -18,16 +20,11 @@ public class CandidatesController : ControllerBase
         _db = db;
     }
 
-    // DTOs locales para requests/responses
-    public record CandidateCreateDto(Guid ElectionId, string Name, string Group);
-    public record CandidateUpdateDto(string Name, string Group);
-    public record CandidateDto(Guid CandidateId, Guid ElectionId, string Name, string Group);
-
-    // GET: api/candidates
+    // GET: /api/candidates
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(
-        [FromQuery] Guid? electionId,
+        [FromQuery] int? electionId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
@@ -37,8 +34,8 @@ public class CandidatesController : ControllerBase
 
         var query = _db.Candidates.AsNoTracking().AsQueryable();
 
-        if (electionId is not null && electionId != Guid.Empty)
-            query = query.Where(c => c.ElectionId == electionId);
+        if (electionId.HasValue && electionId.Value > 0)
+            query = query.Where(c => c.ElectionId == electionId.Value);
 
         var total = await query.CountAsync(ct);
 
@@ -46,27 +43,40 @@ public class CandidatesController : ControllerBase
             .OrderBy(c => c.Name)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(c => new CandidateDto(c.CandidateId, c.ElectionId, c.Name, c.Group))
+            .Select(c => new CandidateDto
+            {
+                CandidateId = c.CandidateId,
+                ElectionId = c.ElectionId,
+                Name = c.Name,
+                Group = c.Group
+            })
             .ToListAsync(ct);
 
         return Ok(new { page, pageSize, total, items });
     }
 
-    // GET: api/candidates/{id}
-    [HttpGet("{id:guid}")]
+    // GET: /api/candidates/{id}
+    [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
+    public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
         var c = await _db.Candidates.AsNoTracking()
             .FirstOrDefaultAsync(x => x.CandidateId == id, ct);
 
-        if (c is null) return NotFound();
+        if (c is null)
+            return NotFound(new { message = "Candidato no encontrado." });
 
-        return Ok(new CandidateDto(c.CandidateId, c.ElectionId, c.Name, c.Group));
+        return Ok(new CandidateDto
+        {
+            CandidateId = c.CandidateId,
+            ElectionId = c.ElectionId,
+            Name = c.Name,
+            Group = c.Group
+        });
     }
 
-    // POST: api/candidates
+    // POST: /api/candidates
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -74,21 +84,21 @@ public class CandidatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create([FromBody] CandidateCreateDto dto, CancellationToken ct)
     {
-        if (dto.ElectionId == Guid.Empty)
-            return BadRequest(new { message = "ElectionId es requerido." });
+        if (dto.ElectionId <= 0)
+            return BadRequest(new { message = "ElectionId es requerido y debe ser mayor a 0." });
 
-        var name = (dto.Name ?? "").Trim();
-        var party = (dto.Group ?? "").Trim();
+        var name = (dto.Name ?? string.Empty).Trim();
+        var group = (dto.Group ?? string.Empty).Trim();
 
         if (string.IsNullOrWhiteSpace(name))
             return BadRequest(new { message = "El nombre del candidato es requerido." });
 
-        if (string.IsNullOrWhiteSpace(party))
+        if (string.IsNullOrWhiteSpace(group))
             return BadRequest(new { message = "La agrupación/partido es requerida." });
 
         var electionExists = await _db.Elections.AnyAsync(e => e.ElectionId == dto.ElectionId, ct);
         if (!electionExists)
-            return NotFound(new { message = "La elección indicada no existe." });
+            return NotFound(new { message = $"No existe la elección con id {dto.ElectionId}." });
 
         var duplicate = await _db.Candidates.AnyAsync(c =>
             c.ElectionId == dto.ElectionId &&
@@ -99,32 +109,47 @@ public class CandidatesController : ControllerBase
 
         var entity = new Candidate
         {
-            CandidateId = Guid.NewGuid(),
             ElectionId = dto.ElectionId,
             Name = name,
-            Group = party
+            Group = group
         };
 
-        _db.Candidates.Add(entity);
-        await _db.SaveChangesAsync(ct);
+        try
+        {
+            _db.Candidates.Add(entity);
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException sql &&
+                                           (sql.Number == 2601 || sql.Number == 2627))
+        {
+            return Conflict(new { message = "Ya existe un candidato con ese nombre en esta elección." });
+        }
 
-        var response = new CandidateDto(entity.CandidateId, entity.ElectionId, entity.Name, entity.Group);
+        var response = new CandidateDto
+        {
+            CandidateId = entity.CandidateId,
+            ElectionId = entity.ElectionId,
+            Name = entity.Name,
+            Group = entity.Group
+        };
+
         return CreatedAtAction(nameof(GetById), new { id = entity.CandidateId }, response);
     }
 
-    // PUT: api/candidates/{id}
-    [HttpPut("{id:guid}")]
+    // PUT: /api/candidates/{id}
+    [HttpPut("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] CandidateUpdateDto dto, CancellationToken ct)
+    public async Task<IActionResult> Update(int id, [FromBody] CandidateUpdateDto dto, CancellationToken ct)
     {
         var entity = await _db.Candidates.FirstOrDefaultAsync(c => c.CandidateId == id, ct);
-        if (entity is null) return NotFound(new { message = "El candidato no existe." });
+        if (entity is null)
+            return NotFound(new { message = "El candidato no existe." });
 
-        var name = (dto.Name ?? "").Trim();
-        var group = (dto.Group ?? "").Trim();
+        var name = (dto.Name ?? string.Empty).Trim();
+        var group = (dto.Group ?? string.Empty).Trim();
 
         if (string.IsNullOrWhiteSpace(name))
             return BadRequest(new { message = "El nombre del candidato es requerido." });
@@ -143,23 +168,38 @@ public class CandidatesController : ControllerBase
         entity.Name = name;
         entity.Group = group;
 
-        await _db.SaveChangesAsync(ct);
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException sql &&
+                                           (sql.Number == 2601 || sql.Number == 2627))
+        {
+            return Conflict(new { message = "Ya existe otro candidato con ese nombre en esta elección." });
+        }
 
         return Ok(new
         {
             message = "El candidato se ha editado con éxito.",
-            item = new CandidateDto(entity.CandidateId, entity.ElectionId, entity.Name, entity.Group)
+            item = new CandidateDto
+            {
+                CandidateId = entity.CandidateId,
+                ElectionId = entity.ElectionId,
+                Name = entity.Name,
+                Group = entity.Group
+            }
         });
     }
 
-    // DELETE: api/candidates/{id}
-    [HttpDelete("{id:guid}")]
+    // DELETE: /api/candidates/{id}
+    [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var entity = await _db.Candidates.FirstOrDefaultAsync(c => c.CandidateId == id, ct);
-        if (entity is null) return NotFound(new { message = "El candidato no existe." });
+        if (entity is null)
+            return NotFound(new { message = "El candidato no existe." });
 
         _db.Candidates.Remove(entity);
         await _db.SaveChangesAsync(ct);

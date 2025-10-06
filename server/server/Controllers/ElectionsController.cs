@@ -46,7 +46,7 @@ public class ElectionsController : ControllerBase
         return null;
     }
 
-    //POST: crear elección
+    // POST: /api/elections  (crear elección)
     [HttpPost]
     [ProducesResponseType(typeof(ElectionDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -56,19 +56,21 @@ public class ElectionsController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
+        var name = (dto.Name ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(name))
+            return BadRequest(new { message = "El nombre de la elección es requerido." });
+
         var dateError = ValidateDates(dto.StartDateUtc, dto.EndDateUtc);
         if (dateError is not null)
             return BadRequest(new { message = dateError });
 
         // Nombre único
-        var name = dto.Name.Trim();
         var exists = await _db.Elections.AnyAsync(e => e.Name == name, ct);
         if (exists)
             return Conflict(new { message = "Ya existe una elección con ese nombre." });
 
         var entity = new Election
         {
-            ElectionId = Guid.NewGuid(),
             Name = name,
             StartDate = dto.StartDateUtc,
             EndDate = dto.EndDateUtc,
@@ -78,14 +80,17 @@ public class ElectionsController : ControllerBase
         _db.Elections.Add(entity);
         await _db.SaveChangesAsync(ct);
 
-        var dtoOut = ToDto(entity, 0, 0);
+        var dtoOut = ToDto(entity, candidateCount: 0, voteCount: 0);
         return CreatedAtAction(nameof(GetById), new { id = entity.ElectionId }, dtoOut);
     }
 
-    //GET: listar 
+    // GET: /api/elections (listar)
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
@@ -117,13 +122,14 @@ public class ElectionsController : ControllerBase
         return Ok(new { page, pageSize, total, items });
     }
 
-    //GET: por id
-    [HttpGet("{id:guid}")]
+    // GET: /api/elections/{id}
+    [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(ElectionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
+    public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
-        var e = await _db.Elections.AsNoTracking().FirstOrDefaultAsync(x => x.ElectionId == id, ct);
+        var e = await _db.Elections.AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.ElectionId == id, ct);
         if (e is null) return NotFound();
 
         var candidateCount = await _db.Candidates.CountAsync(c => c.ElectionId == id, ct);
@@ -132,23 +138,25 @@ public class ElectionsController : ControllerBase
         return Ok(ToDto(e, candidateCount, voteCount));
     }
 
-    //PUT: actualizar (nombre/fechas/estado)
+    // PUT: /api/elections/{id} (actualizar)
     // Reglas:
-    // - Solo se permite editar fechas si Status = "Draft".
+    // - Solo se permite editar fechas si Status actual = "Draft".
     // - Status permitido: Draft | Active | Closed
-    // - No se puede pasar a Active si las fechas son inválidas o si Start>=End.
-    [HttpPut("{id:guid}")]
+    [HttpPut("{id:int}")]
     [ProducesResponseType(typeof(ElectionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateElectionDto dto, CancellationToken ct)
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateElectionDto dto, CancellationToken ct)
     {
         var e = await _db.Elections.FirstOrDefaultAsync(x => x.ElectionId == id, ct);
         if (e is null) return NotFound();
 
-        var name = dto.Name.Trim();
-        // Verificar duplicado de nombre 
+        var name = (dto.Name ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(name))
+            return BadRequest(new { message = "El nombre de la elección es requerido." });
+
+        // Nombre único (excluyendo la misma elección)
         var dup = await _db.Elections.AnyAsync(x => x.ElectionId != id && x.Name == name, ct);
         if (dup)
             return Conflict(new { message = "Ya existe otra elección con ese nombre." });
@@ -157,7 +165,7 @@ public class ElectionsController : ControllerBase
         if (!IsValidStatus(newStatus))
             return BadRequest(new { message = "Estado inválido. Use 'Draft', 'Active' o 'Closed'." });
 
-        // Si estamos en Draft, se pueden alterar fechas; si no, las dejamos igual.
+        // Si está en Draft, se pueden editar fechas
         if ((e.Status ?? "Draft") == "Draft")
         {
             var dateError = ValidateDates(dto.StartDateUtc, dto.EndDateUtc);
@@ -170,8 +178,6 @@ public class ElectionsController : ControllerBase
 
         e.Name = name;
 
-        // Reglas simples de transición
-        // - Para pasar a Active, las fechas deben ser válidas y hoy estar <= End
         if (newStatus == "Active")
         {
             if (e.StartDate is null || e.EndDate is null || e.StartDate >= e.EndDate)
@@ -188,26 +194,25 @@ public class ElectionsController : ControllerBase
         return Ok(ToDto(e, candidateCount, voteCount));
     }
 
-    //DELETE: eliminar (solo si no tiene votos) 
-    [HttpDelete("{id:guid}")]
+    // DELETE: /api/elections/{id}
+    [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var e = await _db.Elections.FirstOrDefaultAsync(x => x.ElectionId == id, ct);
         if (e is null) return NotFound();
 
-        var votes = await _db.Votes.AnyAsync(v => v.ElectionId == id, ct);
-        if (votes)
+        var hasVotes = await _db.Votes.AnyAsync(v => v.ElectionId == id, ct);
+        if (hasVotes)
             return BadRequest(new { message = "No se puede eliminar: la elección ya tiene votos." });
 
-        // Si tienes FK de Candidate se debe de borrar primero candidatos
         var hasCandidates = await _db.Candidates.AnyAsync(c => c.ElectionId == id, ct);
         if (hasCandidates)
             return BadRequest(new { message = "No se puede eliminar: remueva o reasigne los candidatos primero." });
 
-        _db.Remove(e);
+        _db.Elections.Remove(e);
         await _db.SaveChangesAsync(ct);
 
         return Ok(new { message = "La elección fue eliminada con éxito." });

@@ -30,7 +30,7 @@ public class UpdateElectionDto
 
 public class ElectionDto
 {
-    public Guid ElectionId { get; set; }
+    public int ElectionId { get; set; }
     public string Name { get; set; } = "";
     public DateTime StartDateUtc { get; set; }
     public DateTime EndDateUtc { get; set; }

@@ -2,7 +2,7 @@
 
 public class Election
 {
-    public Guid ElectionId { get; set; } = Guid.NewGuid();  
+    public int ElectionId { get; set; } 
     public string Name { get; set; } = null!;
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
