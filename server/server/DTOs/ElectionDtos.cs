@@ -34,7 +34,7 @@ public class ElectionDto
     public string Name { get; set; } = "";
     public DateTime StartDateUtc { get; set; }
     public DateTime EndDateUtc { get; set; }
-    public string Status { get; set; } = "Schedule";
+    public string Status { get; set; } = "Scheduled";
 
     public int CandidateCount { get; set; }
     public int VoteCount { get; set; }
