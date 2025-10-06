@@ -50,7 +50,7 @@ export function EditElectionDialog({
     startTime: "",
     endDate: "",
     endTime: "",
-    status: "Draft",
+    status: "Scheduled",
   })
 
   useEffect(() => {
@@ -104,7 +104,7 @@ export function EditElectionDialog({
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const isDraft = election?.status === "Draft"
+  const isDraft = election?.status === "Scheduled"
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -218,7 +218,7 @@ export function EditElectionDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Draft">Borrador</SelectItem>
+                    <SelectItem value="Scheduled">Borrador</SelectItem>
                     <SelectItem value="Active">Activa</SelectItem>
                     <SelectItem value="Closed">Cerrada</SelectItem>
                   </SelectContent>

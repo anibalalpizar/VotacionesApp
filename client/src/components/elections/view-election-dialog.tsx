@@ -64,7 +64,7 @@ export function ViewElectionDialog({
 
   const statusStyles =
     {
-      Draft:
+      Scheduled:
         "bg-gray-600/10 text-gray-600 focus-visible:ring-gray-600/20 dark:bg-gray-400/10 dark:text-gray-400",
       Active:
         "bg-green-600/10 text-green-600 focus-visible:ring-green-600/20 dark:bg-green-400/10 dark:text-green-400",
@@ -73,7 +73,7 @@ export function ViewElectionDialog({
     }[election?.status || ""] || "bg-gray-600/10 text-gray-600"
 
   const statusLabels = {
-    Draft: "Borrador",
+    Scheduled: "Borrador",
     Active: "Activa",
     Closed: "Cerrada",
   }
