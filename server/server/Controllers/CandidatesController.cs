@@ -77,6 +77,7 @@ public class CandidatesController : ControllerBase
             CandidateId = c.CandidateId,
             Name = c.Name,
             Party = c.Party,
+            ElectionId = c.ElectionId,
             ElectionName = c.Election != null ? c.Election.Name : "(Sin elección)"
         });
     }
