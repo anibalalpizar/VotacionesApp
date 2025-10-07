@@ -63,6 +63,22 @@ const data = {
       ],
     },
     {
+      title: "Candidatos",
+      url: "#",
+      icon: UserPlus,
+      adminOnly: true,
+      items: [
+        {
+          title: "Registrar Candidato",
+          url: "/dashboard/candidates/register",
+        },
+        {
+          title: "Ver Candidatos",
+          url: "/dashboard/candidates",
+        },
+      ],
+    },
+    {
       title: "Reportes",
       url: "#",
       icon: BarChart3,
