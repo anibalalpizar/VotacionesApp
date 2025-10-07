@@ -9,6 +9,7 @@ public class CandidateCreateDto
 
 public class CandidateUpdateDto
 {
+    public int? ElectionId { get; set; }
     public string Name { get; set; } = "";
     public string Party { get; set; } = "";
 }

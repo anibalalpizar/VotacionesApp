@@ -152,8 +152,9 @@ public class CandidatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(int id, [FromBody] CandidateUpdateDto dto, CancellationToken ct)
     {
+        // Traemos el candidato con su elección actual (para ElectionName en la respuesta)
         var entity = await _db.Candidates
-            .Include(c => c.Election) // para ElectionName en la respuesta
+            .Include(c => c.Election)
             .FirstOrDefaultAsync(c => c.CandidateId == id, ct);
 
         if (entity is null)
@@ -168,16 +169,32 @@ public class CandidatesController : ControllerBase
         if (string.IsNullOrWhiteSpace(party))
             return BadRequest(new { message = "La agrupación/partido es requerida." });
 
+        // Si el DTO trae ElectionId y es > 0, usamos ese; si no, usamos el actual
+        var targetElectionId = (dto.ElectionId.HasValue && dto.ElectionId.Value > 0)
+            ? dto.ElectionId.Value
+            : entity.ElectionId;
+
+        // Si el ElectionId cambia, validamos que exista la nueva elección
+        if (targetElectionId != entity.ElectionId)
+        {
+            var exists = await _db.Elections.AnyAsync(e => e.ElectionId == targetElectionId, ct);
+            if (!exists)
+                return NotFound(new { message = $"No existe la elección con id {targetElectionId}." });
+        }
+
+        // Validar duplicado de nombre dentro de la elección destino
         var duplicate = await _db.Candidates.AnyAsync(c =>
-            c.ElectionId == entity.ElectionId &&
+            c.ElectionId == targetElectionId &&
             c.CandidateId != id &&
             c.Name.ToLower() == name.ToLower(), ct);
 
         if (duplicate)
-            return Conflict(new { message = "Ya existe otro candidato con ese nombre en esta elección." });
+            return Conflict(new { message = "Ya existe otro candidato con ese nombre en esa elección." });
 
+        // Aplicar cambios
         entity.Name = name;
         entity.Party = party;
+        entity.ElectionId = targetElectionId;
 
         try
         {
@@ -186,8 +203,13 @@ public class CandidatesController : ControllerBase
         catch (DbUpdateException ex) when (ex.InnerException is SqlException sql &&
                                            (sql.Number == 2601 || sql.Number == 2627))
         {
-            return Conflict(new { message = "Ya existe otro candidato con ese nombre en esta elección." });
+            // Índice único (ElectionId, Name) violado
+            return Conflict(new { message = "Ya existe otro candidato con ese nombre en esa elección." });
         }
+
+        // Aseguramos tener el nombre de la elección (si cambió, recargamos la referencia)
+        if (entity.Election == null || entity.Election.ElectionId != entity.ElectionId)
+            await _db.Entry(entity).Reference(c => c.Election).LoadAsync(ct);
 
         return Ok(new
         {
@@ -201,6 +223,7 @@ public class CandidatesController : ControllerBase
             }
         });
     }
+
 
     // DELETE: /api/candidates/{id}
     [HttpDelete("{id:int}")]
