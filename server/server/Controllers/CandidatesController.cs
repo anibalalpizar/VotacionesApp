@@ -48,7 +48,7 @@ public class CandidatesController : ControllerBase
                 CandidateId = c.CandidateId,
                 ElectionId = c.ElectionId,
                 Name = c.Name,
-                Group = c.Group
+                Party = c.Party
             })
             .ToListAsync(ct);
 
@@ -72,7 +72,7 @@ public class CandidatesController : ControllerBase
             CandidateId = c.CandidateId,
             ElectionId = c.ElectionId,
             Name = c.Name,
-            Group = c.Group
+            Party = c.Party
         });
     }
 
@@ -88,12 +88,12 @@ public class CandidatesController : ControllerBase
             return BadRequest(new { message = "ElectionId es requerido y debe ser mayor a 0." });
 
         var name = (dto.Name ?? string.Empty).Trim();
-        var group = (dto.Group ?? string.Empty).Trim();
+        var party = (dto.Party ?? string.Empty).Trim();
 
         if (string.IsNullOrWhiteSpace(name))
             return BadRequest(new { message = "El nombre del candidato es requerido." });
 
-        if (string.IsNullOrWhiteSpace(group))
+        if (string.IsNullOrWhiteSpace(party))
             return BadRequest(new { message = "La agrupación/partido es requerida." });
 
         var electionExists = await _db.Elections.AnyAsync(e => e.ElectionId == dto.ElectionId, ct);
@@ -111,7 +111,7 @@ public class CandidatesController : ControllerBase
         {
             ElectionId = dto.ElectionId,
             Name = name,
-            Group = group
+            Party = party
         };
 
         try
@@ -130,7 +130,7 @@ public class CandidatesController : ControllerBase
             CandidateId = entity.CandidateId,
             ElectionId = entity.ElectionId,
             Name = entity.Name,
-            Group = entity.Group
+            Party = entity.Party
         };
 
         return CreatedAtAction(nameof(GetById), new { id = entity.CandidateId }, response);
@@ -149,12 +149,12 @@ public class CandidatesController : ControllerBase
             return NotFound(new { message = "El candidato no existe." });
 
         var name = (dto.Name ?? string.Empty).Trim();
-        var group = (dto.Group ?? string.Empty).Trim();
+        var party = (dto.Party ?? string.Empty).Trim();
 
         if (string.IsNullOrWhiteSpace(name))
             return BadRequest(new { message = "El nombre del candidato es requerido." });
 
-        if (string.IsNullOrWhiteSpace(group))
+        if (string.IsNullOrWhiteSpace(party))
             return BadRequest(new { message = "La agrupación/partido es requerida." });
 
         var duplicate = await _db.Candidates.AnyAsync(c =>
@@ -166,7 +166,7 @@ public class CandidatesController : ControllerBase
             return Conflict(new { message = "Ya existe otro candidato con ese nombre en esta elección." });
 
         entity.Name = name;
-        entity.Group = group;
+        entity.Party = party;
 
         try
         {
@@ -186,7 +186,7 @@ public class CandidatesController : ControllerBase
                 CandidateId = entity.CandidateId,
                 ElectionId = entity.ElectionId,
                 Name = entity.Name,
-                Group = entity.Group
+                Party = entity.Party
             }
         });
     }

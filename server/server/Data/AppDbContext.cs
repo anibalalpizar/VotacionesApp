@@ -63,7 +63,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.CandidateId).ValueGeneratedOnAdd();   
 
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
-            e.Property(x => x.Group).HasMaxLength(200).IsRequired();  
+            e.Property(x => x.Party).HasMaxLength(200).IsRequired();  
 
             e.HasOne(x => x.Election)
                 .WithMany()
