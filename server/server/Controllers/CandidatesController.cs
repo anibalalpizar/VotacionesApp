@@ -32,9 +32,12 @@ public class CandidatesController : ControllerBase
         page = page < 1 ? 1 : page;
         pageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
 
-        var query = _db.Candidates.AsNoTracking().AsQueryable();
+        var query = _db.Candidates
+            .Include(c => c.Election) 
+            .AsNoTracking()
+            .AsQueryable();
 
-        if (electionId.HasValue && electionId.Value > 0)
+        if (electionId is not null)
             query = query.Where(c => c.ElectionId == electionId.Value);
 
         var total = await query.CountAsync(ct);
@@ -43,12 +46,12 @@ public class CandidatesController : ControllerBase
             .OrderBy(c => c.Name)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(c => new CandidateDto
+            .Select(c => new
             {
                 CandidateId = c.CandidateId,
-                ElectionId = c.ElectionId,
                 Name = c.Name,
-                Party = c.Party
+                Party = c.Party,
+                ElectionName = c.Election != null ? c.Election.Name : "(Sin elección)"
             })
             .ToListAsync(ct);
 
@@ -61,18 +64,20 @@ public class CandidatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
-        var c = await _db.Candidates.AsNoTracking()
+        var c = await _db.Candidates
+            .Include(x => x.Election)
+            .AsNoTracking()
             .FirstOrDefaultAsync(x => x.CandidateId == id, ct);
 
         if (c is null)
-            return NotFound(new { message = "Candidato no encontrado." });
+            return NotFound(new { message = "El candidato no existe." });
 
-        return Ok(new CandidateDto
+        return Ok(new
         {
             CandidateId = c.CandidateId,
-            ElectionId = c.ElectionId,
             Name = c.Name,
-            Party = c.Party
+            Party = c.Party,
+            ElectionName = c.Election != null ? c.Election.Name : "(Sin elección)"
         });
     }
 
@@ -96,8 +101,11 @@ public class CandidatesController : ControllerBase
         if (string.IsNullOrWhiteSpace(party))
             return BadRequest(new { message = "La agrupación/partido es requerida." });
 
-        var electionExists = await _db.Elections.AnyAsync(e => e.ElectionId == dto.ElectionId, ct);
-        if (!electionExists)
+        var election = await _db.Elections
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.ElectionId == dto.ElectionId, ct);
+
+        if (election is null)
             return NotFound(new { message = $"No existe la elección con id {dto.ElectionId}." });
 
         var duplicate = await _db.Candidates.AnyAsync(c =>
@@ -125,12 +133,12 @@ public class CandidatesController : ControllerBase
             return Conflict(new { message = "Ya existe un candidato con ese nombre en esta elección." });
         }
 
-        var response = new CandidateDto
+        var response = new
         {
             CandidateId = entity.CandidateId,
-            ElectionId = entity.ElectionId,
             Name = entity.Name,
-            Party = entity.Party
+            Party = entity.Party,
+            ElectionName = election.Name
         };
 
         return CreatedAtAction(nameof(GetById), new { id = entity.CandidateId }, response);
@@ -144,7 +152,10 @@ public class CandidatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(int id, [FromBody] CandidateUpdateDto dto, CancellationToken ct)
     {
-        var entity = await _db.Candidates.FirstOrDefaultAsync(c => c.CandidateId == id, ct);
+        var entity = await _db.Candidates
+            .Include(c => c.Election) // para ElectionName en la respuesta
+            .FirstOrDefaultAsync(c => c.CandidateId == id, ct);
+
         if (entity is null)
             return NotFound(new { message = "El candidato no existe." });
 
@@ -181,12 +192,12 @@ public class CandidatesController : ControllerBase
         return Ok(new
         {
             message = "El candidato se ha editado con éxito.",
-            item = new CandidateDto
+            item = new
             {
                 CandidateId = entity.CandidateId,
-                ElectionId = entity.ElectionId,
                 Name = entity.Name,
-                Party = entity.Party
+                Party = entity.Party,
+                ElectionName = entity.Election != null ? entity.Election.Name : "(Sin elección)"
             }
         });
     }
