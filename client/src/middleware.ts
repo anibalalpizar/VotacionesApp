@@ -43,6 +43,7 @@ export function middleware(request: NextRequest) {
         const adminOnlyRoutes = [
           "/dashboard/voters",
           "/dashboard/elections/create",
+          "/dashboard/candidates/register",
         ]
 
         const isAdminOnlyRoute = adminOnlyRoutes.some((route) =>
