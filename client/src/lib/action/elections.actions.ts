@@ -51,11 +51,6 @@ export interface UpdateElectionResponse {
 }
 
 export async function createElectionAction(formData: FormData) {
-  console.log(
-    "[v0] createElectionAction called with formData:",
-    Object.fromEntries(formData)
-  )
-
   const token = await getAuthToken()
   if (!token) {
     return {
@@ -84,8 +79,6 @@ export async function createElectionAction(formData: FormData) {
   }
 
   try {
-    console.log("[v0] Sending election creation request:", electionData)
-
     const API_BASE_URL =
       process.env.NEXT_PUBLIC_API_URL || "https://localhost:7290"
 
@@ -98,14 +91,11 @@ export async function createElectionAction(formData: FormData) {
       body: JSON.stringify(electionData),
     })
 
-    console.log("[v0] API response status:", response.status)
-
     if (!response.ok) {
       let errorMessage = "Error al crear la elección. Intente nuevamente."
 
       try {
         const errorData = await response.json()
-        console.log("[v0] API error response:", errorData)
 
         if (errorData.message) {
           errorMessage = errorData.message
@@ -117,7 +107,6 @@ export async function createElectionAction(formData: FormData) {
       } catch (parseError) {
         try {
           const errorText = await response.text()
-          console.log("[v0] API error text:", errorText)
           if (errorText) {
             errorMessage = errorText
           }
@@ -131,7 +120,6 @@ export async function createElectionAction(formData: FormData) {
     }
 
     const result: CreateElectionResponse = await response.json()
-    console.log("[v0] Election creation successful:", result)
 
     return {
       success: true,
@@ -139,7 +127,6 @@ export async function createElectionAction(formData: FormData) {
       data: result,
     }
   } catch (error) {
-    console.error("[v0] Network error during election creation:", error)
     return {
       success: false,
       message: "Error de conexión. Verifique su conexión a internet.",
@@ -151,13 +138,6 @@ export async function getAllElectionsAction(
   page: number = 1,
   pageSize: number = 20
 ) {
-  console.log(
-    "[v0] getAllElectionsAction called with page:",
-    page,
-    "pageSize:",
-    pageSize
-  )
-
   const token = await getAuthToken()
   if (!token) {
     return {
@@ -182,14 +162,11 @@ export async function getAllElectionsAction(
       }
     )
 
-    console.log("[v0] API response status:", response.status)
-
     if (!response.ok) {
       let errorMessage = "Error al obtener la lista de elecciones."
 
       try {
         const errorData = await response.json()
-        console.log("[v0] API error response:", errorData)
 
         if (errorData.error) {
           errorMessage = errorData.error
@@ -201,7 +178,6 @@ export async function getAllElectionsAction(
       } catch (parseError) {
         try {
           const errorText = await response.text()
-          console.log("[v0] API error text:", errorText)
           if (errorText) {
             errorMessage = errorText
           }
@@ -215,7 +191,6 @@ export async function getAllElectionsAction(
     }
 
     const result: GetAllElectionsResponse = await response.json()
-    console.log("[v0] Elections fetched successfully:", result)
 
     return {
       success: true,
@@ -223,7 +198,6 @@ export async function getAllElectionsAction(
       data: result,
     }
   } catch (error) {
-    console.error("[v0] Network error during elections fetch:", error)
     return {
       success: false,
       message: "Error de conexión. Verifique su conexión a internet.",
@@ -232,8 +206,6 @@ export async function getAllElectionsAction(
 }
 
 export async function getElectionByIdAction(electionId: string) {
-  console.log("[v0] getElectionByIdAction called with electionId:", electionId)
-
   const token = await getAuthToken()
   if (!token) {
     return {
@@ -258,8 +230,6 @@ export async function getElectionByIdAction(electionId: string) {
       }
     )
 
-    console.log("[v0] API response status:", response.status)
-
     if (!response.ok) {
       if (response.status === 404) {
         return {
@@ -272,7 +242,6 @@ export async function getElectionByIdAction(electionId: string) {
 
       try {
         const errorData = await response.json()
-        console.log("[v0] API error response:", errorData)
 
         if (errorData.error) {
           errorMessage = errorData.error
@@ -284,7 +253,6 @@ export async function getElectionByIdAction(electionId: string) {
       } catch (parseError) {
         try {
           const errorText = await response.text()
-          console.log("[v0] API error text:", errorText)
           if (errorText) {
             errorMessage = errorText
           }
@@ -298,7 +266,6 @@ export async function getElectionByIdAction(electionId: string) {
     }
 
     const result = await response.json()
-    console.log("[v0] Election details fetched successfully:", result)
 
     return {
       success: true,
@@ -306,7 +273,6 @@ export async function getElectionByIdAction(electionId: string) {
       data: result,
     }
   } catch (error) {
-    console.error("[v0] Network error during election fetch:", error)
     return {
       success: false,
       message: "Error de conexión. Verifique su conexión a internet.",
@@ -323,13 +289,6 @@ export async function updateElectionAction(
     status: string
   }
 ) {
-  console.log(
-    "[v0] updateElectionAction called with electionId:",
-    electionId,
-    "data:",
-    data
-  )
-
   const token = await getAuthToken()
   if (!token) {
     return {
@@ -347,8 +306,6 @@ export async function updateElectionAction(
   }
 
   try {
-    console.log("[v0] Sending election update request:", updateData)
-
     const API_BASE_URL =
       process.env.NEXT_PUBLIC_API_URL || "https://localhost:7290"
 
@@ -364,14 +321,11 @@ export async function updateElectionAction(
       }
     )
 
-    console.log("[v0] API response status:", response.status)
-
     if (!response.ok) {
       let errorMessage = "Error al actualizar la elección. Intente nuevamente."
 
       try {
         const errorData = await response.json()
-        console.log("[v0] API error response:", errorData)
 
         if (errorData.message) {
           errorMessage = errorData.message
@@ -383,7 +337,6 @@ export async function updateElectionAction(
       } catch (parseError) {
         try {
           const errorText = await response.text()
-          console.log("[v0] API error text:", errorText)
           if (errorText) {
             errorMessage = errorText
           }
@@ -397,7 +350,6 @@ export async function updateElectionAction(
     }
 
     const result: UpdateElectionResponse = await response.json()
-    console.log("[v0] Election update successful:", result)
 
     return {
       success: true,
@@ -405,7 +357,6 @@ export async function updateElectionAction(
       data: result,
     }
   } catch (error) {
-    console.error("[v0] Network error during election update:", error)
     return {
       success: false,
       message: "Error de conexión. Verifique su conexión a internet.",
@@ -414,8 +365,6 @@ export async function updateElectionAction(
 }
 
 export async function deleteElectionAction(electionId: string) {
-  console.log("[v0] deleteElectionAction called with electionId:", electionId)
-
   const token = await getAuthToken()
   if (!token) {
     return {
@@ -426,11 +375,6 @@ export async function deleteElectionAction(electionId: string) {
   }
 
   try {
-    console.log(
-      "[v0] Sending election delete request for electionId:",
-      electionId
-    )
-
     const API_BASE_URL =
       process.env.NEXT_PUBLIC_API_URL || "https://localhost:7290"
 
@@ -444,8 +388,6 @@ export async function deleteElectionAction(electionId: string) {
       }
     )
 
-    console.log("[v0] API response status:", response.status)
-
     if (!response.ok) {
       let errorMessage = "Error al eliminar la elección. Intente nuevamente."
 
@@ -454,7 +396,6 @@ export async function deleteElectionAction(electionId: string) {
       } else {
         try {
           const errorData = await response.json()
-          console.log("[v0] API error response:", errorData)
 
           if (errorData.message) {
             errorMessage = errorData.message
@@ -466,7 +407,6 @@ export async function deleteElectionAction(electionId: string) {
         } catch (parseError) {
           try {
             const errorText = await response.text()
-            console.log("[v0] API error text:", errorText)
             if (errorText) {
               errorMessage = errorText
             }
@@ -480,14 +420,11 @@ export async function deleteElectionAction(electionId: string) {
       }
     }
 
-    console.log("[v0] Election deletion successful")
-
     return {
       success: true,
       message: "Elección eliminada exitosamente.",
     }
   } catch (error) {
-    console.error("[v0] Network error during election deletion:", error)
     return {
       success: false,
       message: "Error de conexión. Verifique su conexión a internet.",

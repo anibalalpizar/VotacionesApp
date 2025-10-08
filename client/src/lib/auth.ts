@@ -16,7 +16,6 @@ export async function login(
     })
 
     const data = await response.json()
-    console.log("[v0] Backend response:", data)
 
     if (response.ok) {
       const cookieStore = await cookies()
@@ -44,11 +43,6 @@ export async function login(
         maxAge: data.expiresIn,
       })
 
-      console.log(
-        "[v0] Session cookies set successfully with user data:",
-        userData
-      )
-
       return {
         success: true,
         message: "Inicio de sesión exitoso",
@@ -61,7 +55,6 @@ export async function login(
       }
     }
   } catch (error) {
-    console.error("[v0] Login error:", error)
     return {
       success: false,
       message: "Error de conexión. Intente nuevamente.",
@@ -76,13 +69,10 @@ export async function getCurrentUser(): Promise<User | null> {
     const userDataCookie = cookieStore.get("user-data")
 
     if (!authToken || !userDataCookie) {
-      console.log("[v0] No auth token or user data found in cookies")
       return null
     }
 
-    // Recuperar los datos del usuario desde la cookie
     const userData = JSON.parse(userDataCookie.value)
-    console.log("[v0] User data from cookie:", userData)
 
     return {
       userId: userData.userId,
@@ -94,7 +84,6 @@ export async function getCurrentUser(): Promise<User | null> {
       isFirstTime: userData.isFirstTime,
     }
   } catch (error) {
-    console.error("[v0] Get current user error:", error)
     return null
   }
 }
@@ -116,7 +105,6 @@ export async function getAuthToken(): Promise<string | null> {
     const authToken = cookieStore.get("auth-token")
     return authToken?.value || null
   } catch (error) {
-    console.error("[v0] Get auth token error:", error)
     return null
   }
 }

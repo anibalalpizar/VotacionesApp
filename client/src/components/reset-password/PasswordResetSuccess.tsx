@@ -10,7 +10,6 @@ function PasswordResetSuccess() {
     try {
       await logoutAction()
     } catch (error) {
-      console.error("[v0] Logout error:", error)
     }
   }
 

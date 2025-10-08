@@ -56,11 +56,6 @@ export interface UpdateVoterResponse {
 import { getAuthToken } from "../auth"
 
 export async function registerVoterAction(formData: FormData) {
-  console.log(
-    "[v0] registerVoterAction called with formData:",
-    Object.fromEntries(formData)
-  )
-
   const token = await getAuthToken()
   if (!token) {
     return {
@@ -81,8 +76,6 @@ export async function registerVoterAction(formData: FormData) {
   }
 
   try {
-    console.log("[v0] Sending voter registration request:", voterData)
-
     const API_BASE_URL =
       process.env.NEXT_PUBLIC_API_URL || "https://localhost:7290"
 
@@ -95,16 +88,12 @@ export async function registerVoterAction(formData: FormData) {
       body: JSON.stringify(voterData),
     })
 
-    console.log("[v0] API response status:", response.status)
-
     if (!response.ok) {
       let errorMessage = "Error al registrar el votante. Intente nuevamente."
 
       try {
         const errorData = await response.json()
-        console.log("[v0] API error response:", errorData)
 
-        // Extraer el mensaje de error del backend
         if (errorData.error) {
           errorMessage = errorData.error
         } else if (errorData.message) {
@@ -113,16 +102,12 @@ export async function registerVoterAction(formData: FormData) {
           errorMessage = errorData.title
         }
       } catch (parseError) {
-        // Si no se puede parsear como JSON, intentar leer como texto
         try {
           const errorText = await response.text()
-          console.log("[v0] API error text:", errorText)
           if (errorText) {
             errorMessage = errorText
           }
-        } catch {
-          // Usar mensaje por defecto si no se puede leer la respuesta
-        }
+        } catch {}
       }
 
       return {
@@ -132,7 +117,6 @@ export async function registerVoterAction(formData: FormData) {
     }
 
     const result: VoterRegistrationResponse = await response.json()
-    console.log("[v0] Voter registration successful:", result)
 
     return {
       success: true,
@@ -141,7 +125,6 @@ export async function registerVoterAction(formData: FormData) {
       data: result,
     }
   } catch (error) {
-    console.error("[v0] Network error during voter registration:", error)
     return {
       success: false,
       message: "Error de conexión. Verifique su conexión a internet.",
@@ -153,13 +136,6 @@ export async function getAllVotersAction(
   page: number = 1,
   pageSize: number = 20
 ) {
-  console.log(
-    "[v0] getAllVotersAction called with page:",
-    page,
-    "pageSize:",
-    pageSize
-  )
-
   const token = await getAuthToken()
   if (!token) {
     return {
@@ -184,14 +160,11 @@ export async function getAllVotersAction(
       }
     )
 
-    console.log("[v0] API response status:", response.status)
-
     if (!response.ok) {
       let errorMessage = "Error al obtener la lista de votantes."
 
       try {
         const errorData = await response.json()
-        console.log("[v0] API error response:", errorData)
 
         if (errorData.error) {
           errorMessage = errorData.error
@@ -203,7 +176,6 @@ export async function getAllVotersAction(
       } catch (parseError) {
         try {
           const errorText = await response.text()
-          console.log("[v0] API error text:", errorText)
           if (errorText) {
             errorMessage = errorText
           }
@@ -217,7 +189,6 @@ export async function getAllVotersAction(
     }
 
     const result: GetAllVotersResponse = await response.json()
-    console.log("[v0] Voters fetched successfully:", result)
 
     return {
       success: true,
@@ -225,7 +196,6 @@ export async function getAllVotersAction(
       data: result,
     }
   } catch (error) {
-    console.error("[v0] Network error during voters fetch:", error)
     return {
       success: false,
       message: "Error de conexión. Verifique su conexión a internet.",
@@ -234,8 +204,6 @@ export async function getAllVotersAction(
 }
 
 export async function getVoterByIdAction(voterId: number) {
-  console.log("[v0] getVoterByIdAction called with voterId:", voterId)
-
   const token = await getAuthToken()
   if (!token) {
     return {
@@ -257,8 +225,6 @@ export async function getVoterByIdAction(voterId: number) {
       cache: "no-store",
     })
 
-    console.log("[v0] API response status:", response.status)
-
     if (!response.ok) {
       if (response.status === 404) {
         return {
@@ -271,7 +237,6 @@ export async function getVoterByIdAction(voterId: number) {
 
       try {
         const errorData = await response.json()
-        console.log("[v0] API error response:", errorData)
 
         if (errorData.error) {
           errorMessage = errorData.error
@@ -283,7 +248,6 @@ export async function getVoterByIdAction(voterId: number) {
       } catch (parseError) {
         try {
           const errorText = await response.text()
-          console.log("[v0] API error text:", errorText)
           if (errorText) {
             errorMessage = errorText
           }
@@ -297,7 +261,6 @@ export async function getVoterByIdAction(voterId: number) {
     }
 
     const result: VoterDetailsResponse = await response.json()
-    console.log("[v0] Voter details fetched successfully:", result)
 
     return {
       success: true,
@@ -305,7 +268,6 @@ export async function getVoterByIdAction(voterId: number) {
       data: result,
     }
   } catch (error) {
-    console.error("[v0] Network error during voter fetch:", error)
     return {
       success: false,
       message: "Error de conexión. Verifique su conexión a internet.",
@@ -322,13 +284,6 @@ export async function updateVoterAction(
     role: string
   }
 ) {
-  console.log(
-    "[v0] updateVoterAction called with voterId:",
-    voterId,
-    "data:",
-    data
-  )
-
   const token = await getAuthToken()
   if (!token) {
     return {
@@ -346,8 +301,6 @@ export async function updateVoterAction(
   }
 
   try {
-    console.log("[v0] Sending voter update request:", updateData)
-
     const API_BASE_URL =
       process.env.NEXT_PUBLIC_API_URL || "https://localhost:7290"
 
@@ -360,14 +313,11 @@ export async function updateVoterAction(
       body: JSON.stringify(updateData),
     })
 
-    console.log("[v0] API response status:", response.status)
-
     if (!response.ok) {
       let errorMessage = "Error al actualizar el votante. Intente nuevamente."
 
       try {
         const errorData = await response.json()
-        console.log("[v0] API error response:", errorData)
 
         if (errorData.message) {
           errorMessage = errorData.message
@@ -379,7 +329,6 @@ export async function updateVoterAction(
       } catch (parseError) {
         try {
           const errorText = await response.text()
-          console.log("[v0] API error text:", errorText)
           if (errorText) {
             errorMessage = errorText
           }
@@ -393,7 +342,6 @@ export async function updateVoterAction(
     }
 
     const result = await response.json()
-    console.log("[v0] Voter update successful:", result)
 
     return {
       success: true,
@@ -401,7 +349,6 @@ export async function updateVoterAction(
       data: result.user,
     }
   } catch (error) {
-    console.error("[v0] Network error during voter update:", error)
     return {
       success: false,
       message: "Error de conexión. Verifique su conexión a internet.",
@@ -410,8 +357,6 @@ export async function updateVoterAction(
 }
 
 export async function deleteVoterAction(voterId: number) {
-  console.log("[v0] deleteVoterAction called with voterId:", voterId)
-
   const token = await getAuthToken()
   if (!token) {
     return {
@@ -422,8 +367,6 @@ export async function deleteVoterAction(voterId: number) {
   }
 
   try {
-    console.log("[v0] Sending voter delete request for voterId:", voterId)
-
     const API_BASE_URL =
       process.env.NEXT_PUBLIC_API_URL || "https://localhost:7290"
 
@@ -434,8 +377,6 @@ export async function deleteVoterAction(voterId: number) {
       },
     })
 
-    console.log("[v0] API response status:", response.status)
-
     if (!response.ok) {
       let errorMessage = "Error al eliminar el votante. Intente nuevamente."
 
@@ -444,7 +385,6 @@ export async function deleteVoterAction(voterId: number) {
       } else {
         try {
           const errorData = await response.json()
-          console.log("[v0] API error response:", errorData)
 
           if (errorData.message) {
             errorMessage = errorData.message
@@ -456,7 +396,6 @@ export async function deleteVoterAction(voterId: number) {
         } catch (parseError) {
           try {
             const errorText = await response.text()
-            console.log("[v0] API error text:", errorText)
             if (errorText) {
               errorMessage = errorText
             }
@@ -470,14 +409,11 @@ export async function deleteVoterAction(voterId: number) {
       }
     }
 
-    console.log("[v0] Voter deletion successful")
-
     return {
       success: true,
       message: "Votante eliminado exitosamente.",
     }
   } catch (error) {
-    console.error("[v0] Network error during voter deletion:", error)
     return {
       success: false,
       message: "Error de conexión. Verifique su conexión a internet.",

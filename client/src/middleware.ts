@@ -55,7 +55,6 @@ export function middleware(request: NextRequest) {
         }
       }
     } catch (error) {
-      console.error("Error parsing user data:", error)
       const response = NextResponse.redirect(new URL("/login", request.url))
       response.cookies.delete("auth-token")
       response.cookies.delete("user-data")

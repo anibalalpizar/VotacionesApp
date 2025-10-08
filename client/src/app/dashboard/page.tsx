@@ -5,8 +5,6 @@ import { Vote, Users, Shield } from "lucide-react"
 export default async function DashboardPage() {
   const user = await getCurrentUser()
 
-  console.log("[v0] User role from backend:", user?.role)
-
   const roleConfig = {
     ADMIN: {
       title: "Panel de Administración",

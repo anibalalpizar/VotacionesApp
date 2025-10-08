@@ -53,7 +53,6 @@ function CreateNewPassword({
       }
     } catch (err) {
       setError("Error al cambiar la contraseña. Intente nuevamente.")
-      console.error("[v0] Error:", err)
     } finally {
       setIsLoading(false)
     }

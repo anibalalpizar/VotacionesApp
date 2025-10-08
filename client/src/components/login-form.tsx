@@ -20,23 +20,17 @@ export function LoginForm({
   const [showPassword, setShowPassword] = useState(false)
 
   async function handleSubmit(formData: FormData) {
-    console.log("[v0] handleSubmit called")
     setIsLoading(true)
 
     try {
-      console.log("[v0] Calling loginAction")
       const result = await loginAction(formData)
-      console.log("[v0] loginAction result:", result)
 
       if (result && !result.success) {
-        console.log("[v0] Login failed, showing error:", result.message)
         toast.error(result.message)
       } else if (result && result.success) {
-        console.log("[v0] Login successful but no redirect happened")
         toast.success("Inicio de sesión exitoso")
       }
     } catch (error) {
-      console.log("[v0] Error in handleSubmit:", error)
       if (
         error &&
         typeof error === "object" &&
@@ -44,10 +38,8 @@ export function LoginForm({
         typeof error.digest === "string" &&
         error.digest.includes("NEXT_REDIRECT")
       ) {
-        console.log("[v0] Redirect detected - login was successful")
         toast.success("Inicio de sesión exitoso")
       } else {
-        console.log("[v0] Unexpected error:", error)
         toast.error("Error inesperado. Intente nuevamente.")
       }
     } finally {

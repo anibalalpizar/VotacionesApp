@@ -30,11 +30,6 @@ export interface UpdateCandidateRequest {
 }
 
 export async function createCandidateAction(formData: FormData) {
-  console.log(
-    "[v0] createCandidateAction called with formData:",
-    Object.fromEntries(formData)
-  )
-
   const token = await getAuthToken()
   if (!token) {
     return {
@@ -55,8 +50,6 @@ export async function createCandidateAction(formData: FormData) {
   }
 
   try {
-    console.log("[v0] Sending candidate creation request:", candidateData)
-
     const API_BASE_URL =
       process.env.NEXT_PUBLIC_API_URL || "https://localhost:7290"
 
@@ -69,14 +62,11 @@ export async function createCandidateAction(formData: FormData) {
       body: JSON.stringify(candidateData),
     })
 
-    console.log("[v0] API response status:", response.status)
-
     if (!response.ok) {
       let errorMessage = "Error al crear el candidato. Intente nuevamente."
 
       try {
         const errorData = await response.json()
-        console.log("[v0] API error response:", errorData)
 
         if (errorData.message) {
           errorMessage = errorData.message
@@ -88,7 +78,6 @@ export async function createCandidateAction(formData: FormData) {
       } catch (parseError) {
         try {
           const errorText = await response.text()
-          console.log("[v0] API error text:", errorText)
           if (errorText) {
             errorMessage = errorText
           }
@@ -102,7 +91,6 @@ export async function createCandidateAction(formData: FormData) {
     }
 
     const result: CandidateDto = await response.json()
-    console.log("[v0] Candidate creation successful:", result)
 
     return {
       success: true,
@@ -110,7 +98,6 @@ export async function createCandidateAction(formData: FormData) {
       data: result,
     }
   } catch (error) {
-    console.error("[v0] Network error during candidate creation:", error)
     return {
       success: false,
       message: "Error de conexión. Verifique su conexión a internet.",
@@ -123,15 +110,6 @@ export async function getAllCandidatesAction(
   pageSize: number = 20,
   electionId?: number
 ) {
-  console.log(
-    "[v0] getAllCandidatesAction called with page:",
-    page,
-    "pageSize:",
-    pageSize,
-    "electionId:",
-    electionId
-  )
-
   const token = await getAuthToken()
   if (!token) {
     return {
@@ -158,14 +136,11 @@ export async function getAllCandidatesAction(
       cache: "no-store",
     })
 
-    console.log("[v0] API response status:", response.status)
-
     if (!response.ok) {
       let errorMessage = "Error al obtener la lista de candidatos."
 
       try {
         const errorData = await response.json()
-        console.log("[v0] API error response:", errorData)
 
         if (errorData.error) {
           errorMessage = errorData.error
@@ -177,7 +152,6 @@ export async function getAllCandidatesAction(
       } catch (parseError) {
         try {
           const errorText = await response.text()
-          console.log("[v0] API error text:", errorText)
           if (errorText) {
             errorMessage = errorText
           }
@@ -191,7 +165,6 @@ export async function getAllCandidatesAction(
     }
 
     const result: GetAllCandidatesResponse = await response.json()
-    console.log("[v0] Candidates fetched successfully:", result)
 
     return {
       success: true,
@@ -199,7 +172,6 @@ export async function getAllCandidatesAction(
       data: result,
     }
   } catch (error) {
-    console.error("[v0] Network error during candidates fetch:", error)
     return {
       success: false,
       message: "Error de conexión. Verifique su conexión a internet.",
@@ -208,11 +180,6 @@ export async function getAllCandidatesAction(
 }
 
 export async function getCandidateByIdAction(candidateId: number) {
-  console.log(
-    "[v0] getCandidateByIdAction called with candidateId:",
-    candidateId
-  )
-
   const token = await getAuthToken()
   if (!token) {
     return {
@@ -237,8 +204,6 @@ export async function getCandidateByIdAction(candidateId: number) {
       }
     )
 
-    console.log("[v0] API response status:", response.status)
-
     if (!response.ok) {
       if (response.status === 404) {
         return {
@@ -251,7 +216,6 @@ export async function getCandidateByIdAction(candidateId: number) {
 
       try {
         const errorData = await response.json()
-        console.log("[v0] API error response:", errorData)
 
         if (errorData.error) {
           errorMessage = errorData.error
@@ -263,7 +227,6 @@ export async function getCandidateByIdAction(candidateId: number) {
       } catch (parseError) {
         try {
           const errorText = await response.text()
-          console.log("[v0] API error text:", errorText)
           if (errorText) {
             errorMessage = errorText
           }
@@ -277,7 +240,6 @@ export async function getCandidateByIdAction(candidateId: number) {
     }
 
     const result: CandidateDto = await response.json()
-    console.log("[v0] Candidate details fetched successfully:", result)
 
     return {
       success: true,
@@ -285,7 +247,6 @@ export async function getCandidateByIdAction(candidateId: number) {
       data: result,
     }
   } catch (error) {
-    console.error("[v0] Network error during candidate fetch:", error)
     return {
       success: false,
       message: "Error de conexión. Verifique su conexión a internet.",
@@ -301,13 +262,6 @@ export async function updateCandidateAction(
     party: string
   }
 ) {
-  console.log(
-    "[v0] updateCandidateAction called with candidateId:",
-    candidateId,
-    "data:",
-    data
-  )
-
   const token = await getAuthToken()
   if (!token) {
     return {
@@ -324,8 +278,6 @@ export async function updateCandidateAction(
   }
 
   try {
-    console.log("[v0] Sending candidate update request:", updateData)
-
     const API_BASE_URL =
       process.env.NEXT_PUBLIC_API_URL || "https://localhost:7290"
 
@@ -341,14 +293,11 @@ export async function updateCandidateAction(
       }
     )
 
-    console.log("[v0] API response status:", response.status)
-
     if (!response.ok) {
       let errorMessage = "Error al actualizar el candidato. Intente nuevamente."
 
       try {
         const errorData = await response.json()
-        console.log("[v0] API error response:", errorData)
 
         if (errorData.message) {
           errorMessage = errorData.message
@@ -360,7 +309,6 @@ export async function updateCandidateAction(
       } catch (parseError) {
         try {
           const errorText = await response.text()
-          console.log("[v0] API error text:", errorText)
           if (errorText) {
             errorMessage = errorText
           }
@@ -374,7 +322,6 @@ export async function updateCandidateAction(
     }
 
     const result = await response.json()
-    console.log("[v0] Candidate update successful:", result)
 
     return {
       success: true,
@@ -382,7 +329,6 @@ export async function updateCandidateAction(
       data: result.item,
     }
   } catch (error) {
-    console.error("[v0] Network error during candidate update:", error)
     return {
       success: false,
       message: "Error de conexión. Verifique su conexión a internet.",
@@ -391,11 +337,6 @@ export async function updateCandidateAction(
 }
 
 export async function deleteCandidateAction(candidateId: number) {
-  console.log(
-    "[v0] deleteCandidateAction called with candidateId:",
-    candidateId
-  )
-
   const token = await getAuthToken()
   if (!token) {
     return {
@@ -406,11 +347,6 @@ export async function deleteCandidateAction(candidateId: number) {
   }
 
   try {
-    console.log(
-      "[v0] Sending candidate delete request for candidateId:",
-      candidateId
-    )
-
     const API_BASE_URL =
       process.env.NEXT_PUBLIC_API_URL || "https://localhost:7290"
 
@@ -424,8 +360,6 @@ export async function deleteCandidateAction(candidateId: number) {
       }
     )
 
-    console.log("[v0] API response status:", response.status)
-
     if (!response.ok) {
       let errorMessage = "Error al eliminar el candidato. Intente nuevamente."
 
@@ -434,7 +368,6 @@ export async function deleteCandidateAction(candidateId: number) {
       } else {
         try {
           const errorData = await response.json()
-          console.log("[v0] API error response:", errorData)
 
           if (errorData.message) {
             errorMessage = errorData.message
@@ -446,7 +379,6 @@ export async function deleteCandidateAction(candidateId: number) {
         } catch (parseError) {
           try {
             const errorText = await response.text()
-            console.log("[v0] API error text:", errorText)
             if (errorText) {
               errorMessage = errorText
             }
@@ -460,14 +392,11 @@ export async function deleteCandidateAction(candidateId: number) {
       }
     }
 
-    console.log("[v0] Candidate deletion successful")
-
     return {
       success: true,
       message: "Candidato eliminado exitosamente.",
     }
   } catch (error) {
-    console.error("[v0] Network error during candidate deletion:", error)
     return {
       success: false,
       message: "Error de conexión. Verifique su conexión a internet.",
