@@ -69,10 +69,39 @@ export async function registerVoterAction(formData: FormData) {
   const fullName = formData.get("fullName") as string
   const email = formData.get("email") as string
 
+  if (!identification || identification.trim() === "") {
+    return {
+      success: false,
+      message: "La identificación es requerida.",
+    }
+  }
+
+  if (!fullName || fullName.trim() === "") {
+    return {
+      success: false,
+      message: "El nombre completo es requerido.",
+    }
+  }
+
+  if (!email || email.trim() === "") {
+    return {
+      success: false,
+      message: "El correo electrónico es requerido.",
+    }
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email.trim())) {
+    return {
+      success: false,
+      message: "El correo electrónico no tiene un formato válido.",
+    }
+  }
+
   const voterData: VoterRegistrationRequest = {
-    identification,
-    fullName,
-    email,
+    identification: identification.trim(),
+    fullName: fullName.trim(),
+    email: email.trim().toLowerCase(),
   }
 
   try {
@@ -100,6 +129,9 @@ export async function registerVoterAction(formData: FormData) {
           errorMessage = errorData.message
         } else if (errorData.title) {
           errorMessage = errorData.title
+        } else if (errorData.errors) {
+          const errors = Object.values(errorData.errors).flat()
+          errorMessage = errors.join(", ")
         }
       } catch (parseError) {
         try {
@@ -293,6 +325,35 @@ export async function updateVoterAction(
     }
   }
 
+  if (!data.identification || data.identification.trim() === "") {
+    return {
+      success: false,
+      message: "La identificación es requerida.",
+    }
+  }
+
+  if (!data.fullName || data.fullName.trim() === "") {
+    return {
+      success: false,
+      message: "El nombre completo es requerido.",
+    }
+  }
+
+  if (!data.email || data.email.trim() === "") {
+    return {
+      success: false,
+      message: "El correo electrónico es requerido.",
+    }
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(data.email.trim())) {
+    return {
+      success: false,
+      message: "El correo electrónico no tiene un formato válido.",
+    }
+  }
+
   const updateData: UpdateVoterRequest = {
     identification: data.identification.trim(),
     fullName: data.fullName.trim(),
@@ -325,6 +386,9 @@ export async function updateVoterAction(
           errorMessage = errorData.error
         } else if (errorData.title) {
           errorMessage = errorData.title
+        } else if (errorData.errors) {
+          const errors = Object.values(errorData.errors).flat()
+          errorMessage = errors.join(", ")
         }
       } catch (parseError) {
         try {
