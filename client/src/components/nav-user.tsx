@@ -49,7 +49,7 @@ export function NavUser({
     <SidebarMenu>
       <SidebarMenuItem>
         <div className="flex items-center justify-between gap-2 px-2 py-1.5">
-          <span className="text-sm text-muted-foreground">Cambiar tema</span>
+          <span className="text-sm">Cambiar tema</span>
           <ThemeToggle />
         </div>
         <DropdownMenu>
