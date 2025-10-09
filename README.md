@@ -324,6 +324,25 @@ NEXT_PUBLIC_API_URL=https://api.tudominio.com
 - ✅ El log de auditoría registra la creación del votante
 - ✅ La interfaz muestra la lista actualizada de votantes
 
+#### HU3: Creación de Elección
+
+**Casos de Prueba:**
+
+| ID   | Descripción                     | Entrada                           | Resultado Esperado                   | Estado |
+| ---- | ------------------------------- | --------------------------------- | ------------------------------------ | ------ |
+| T3.1 | Creación exitosa                | Datos válidos completos           | Elección creado, confirmación        | ✅     |
+| T3.2 | Fecha fin anterior al inicio    | Ingreso de fechas                 | Mensaje de error, registro rechazado | ✅     |
+| T3.3 | Nombre duplicado                | Campo ya existente                | Mensaje de validación                | ✅     |
+| T3.4 | Campos requeridos vacíos        | No ingresar datos                 | Mensaje de error                     | ✅     |
+| T3.5 | Periodo solapado                | Ingreso de periodo inválido       | Mensaje de error                     | ✅     |
+
+**Pruebas de Integración:**
+
+- ✅ El administrador puede agregar elecciones
+- ✅ Los datos se persisten correctamente en la base de datos
+- ✅ El log de auditoría registra la creación de las elecciones
+- ✅ La interfaz muestra la lista actualizada de elecciones
+
 ### Cómo Ejecutar las Pruebas
 
 #### Pruebas Manuales
