@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useId, useMemo } from "react"
 import { toast } from "sonner"
-import { Search, Loader2, Eye, Pencil, Trash2 } from "lucide-react"
+import { Search, Loader2, Eye, Pencil, Trash2, Plus } from "lucide-react"
 
 import type {
   Column,
@@ -447,13 +447,21 @@ export function ElectionsTable() {
   return (
     <div className="w-full">
       <div className="rounded-md border">
-        <div className="flex flex-wrap gap-3 px-4 py-6">
-          <div className="w-64">
-            <Filter column={table.getColumn("name")!} />
+        <div className="flex flex-wrap items-end justify-between gap-3 px-4 py-6 border-b">
+          <div className="flex flex-wrap gap-3">
+            <div className="w-64">
+              <Filter column={table.getColumn("name")!} />
+            </div>
+            <div className="w-40">
+              <Filter column={table.getColumn("status")!} />
+            </div>
           </div>
-          <div className="w-40">
-            <Filter column={table.getColumn("status")!} />
-          </div>
+          <Button asChild>
+            <a href="/dashboard/elections/register">
+              <Plus className="mr-2 h-4 w-4" />
+              Agregar Elección
+            </a>
+          </Button>
         </div>
         <Table>
           <TableHeader>

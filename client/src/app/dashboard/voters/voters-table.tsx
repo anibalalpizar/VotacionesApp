@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useId, useMemo } from "react"
 import { toast } from "sonner"
-import { Search, Loader2, Eye, Pencil, Trash2 } from "lucide-react"
+import { Search, Loader2, Eye, Pencil, Trash2, Plus } from "lucide-react"
 
 import type {
   Column,
@@ -158,9 +158,11 @@ export function VotersTable() {
 
   const [selectedVoterId, setSelectedVoterId] = useState<number | null>(null)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
-  const [selectedVoterForEdit, setSelectedVoterForEdit] = useState<Voter | null>(null)
+  const [selectedVoterForEdit, setSelectedVoterForEdit] =
+    useState<Voter | null>(null)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [selectedVoterForDelete, setSelectedVoterForDelete] = useState<Voter | null>(null)
+  const [selectedVoterForDelete, setSelectedVoterForDelete] =
+    useState<Voter | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const columns: ColumnDef<Voter>[] = useMemo(
@@ -254,12 +256,15 @@ export function VotersTable() {
                         setIsLoadingVoter(true)
                         try {
                           const result = await getVoterByIdAction(voter.userId)
-                          
+
                           if (result.success && result.data) {
                             setSelectedVoterId(voter.userId)
                             setViewDialogOpen(true)
                           } else {
-                            toast.error(result.message || "Error al cargar detalles del votante")
+                            toast.error(
+                              result.message ||
+                                "Error al cargar detalles del votante"
+                            )
                           }
                         } catch (error) {
                           toast.error("Error de conexión al cargar detalles")
@@ -293,12 +298,15 @@ export function VotersTable() {
                         setIsLoadingVoter(true)
                         try {
                           const result = await getVoterByIdAction(voter.userId)
-                          
+
                           if (result.success && result.data) {
                             setSelectedVoterForEdit(result.data)
                             setEditDialogOpen(true)
                           } else {
-                            toast.error(result.message || "Error al cargar datos del votante")
+                            toast.error(
+                              result.message ||
+                                "Error al cargar datos del votante"
+                            )
                           }
                         } catch (error) {
                           toast.error("Error de conexión al cargar datos")
@@ -405,19 +413,27 @@ export function VotersTable() {
   return (
     <div className="w-full">
       <div className="rounded-md border">
-        <div className="flex flex-wrap gap-3 px-4 py-6">
-          <div className="w-52">
-            <Filter column={table.getColumn("identification")!} />
+        <div className="flex flex-wrap items-end justify-between gap-3 px-4 py-6 border-b">
+          <div className="flex flex-wrap gap-3">
+            <div className="w-52">
+              <Filter column={table.getColumn("identification")!} />
+            </div>
+            <div className="w-64">
+              <Filter column={table.getColumn("fullName")!} />
+            </div>
+            <div className="w-64">
+              <Filter column={table.getColumn("email")!} />
+            </div>
+            <div className="w-40">
+              <Filter column={table.getColumn("role")!} />
+            </div>
           </div>
-          <div className="w-64">
-            <Filter column={table.getColumn("fullName")!} />
-          </div>
-          <div className="w-64">
-            <Filter column={table.getColumn("email")!} />
-          </div>
-          <div className="w-40">
-            <Filter column={table.getColumn("role")!} />
-          </div>
+          <Button asChild>
+            <a href="/dashboard/voters/register">
+              <Plus className="mr-2 h-4 w-4" />
+              Agregar Votante
+            </a>
+          </Button>
         </div>
         <Table>
           <TableHeader>
@@ -470,9 +486,7 @@ export function VotersTable() {
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4 py-4 border-t">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              Mostrar
-            </span>
+            <span className="text-sm text-muted-foreground">Mostrar</span>
             <Select
               value={pagination.pageSize.toString()}
               onValueChange={(value) => {
@@ -500,7 +514,8 @@ export function VotersTable() {
 
           <div className="flex items-center gap-4">
             <div className="text-sm text-muted-foreground">
-              Página {pagination.page} de {totalPages || 1} ({pagination.total} total)
+              Página {pagination.page} de {totalPages || 1} ({pagination.total}{" "}
+              total)
             </div>
             <div className="flex gap-2">
               <Button
