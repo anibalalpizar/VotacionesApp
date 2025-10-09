@@ -88,7 +88,7 @@ public class VotersController : ControllerBase
                 <p>Hola {user.FullName},</p>
                 <p>Tu cuenta en la aplicación de votaciones de la UTN fue creada por un administrador.</p>
                 <p>Tu <b>contraseña temporal</b> es: <b>{tempPlain}</b></p>
-                <p>Por seguridad, inicia sesión con esta contraseña y cámbiala de inmediato.</p>
+                <p>Por seguridad, inicia sesión con tú cédula y con esta contraseña y cámbiala de inmediato.</p>
             ";
             await _email.SendAsync(user.Email, "Tu contraseña temporal", body);
 

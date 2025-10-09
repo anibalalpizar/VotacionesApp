@@ -172,13 +172,13 @@ public class AuthController : ControllerBase
             <p>Hola {user.FullName},</p>
             <p>Solicitaste recuperar tu contraseña.</p>
             <p>Tu <b>contraseña temporal</b> es: <b>{tempPlain}</b></p>
-            <p>Inicia sesión con esta contraseña y cámbiala inmediatamente.</p>";
+            <p>Inicia sesión con tu número de cédula y esta contraseña y cámbiala inmediatamente.</p>";
 
             await _email.SendAsync(user.Email, "Recuperación de contraseña", body);
 
             await tx.CommitAsync(ct);
 
-            // 6) Mensaje genérico para no dar pistas
+            // 6) Mensaje genérico 
             return Ok(new { message = "Si el correo existe, se enviará una contraseña temporal." });
         }
         catch
