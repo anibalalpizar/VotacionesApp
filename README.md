@@ -343,6 +343,25 @@ NEXT_PUBLIC_API_URL=https://api.tudominio.com
 - ✅ El log de auditoría registra la creación de las elecciones
 - ✅ La interfaz muestra la lista actualizada de elecciones
 
+#### HU4: Registro de Candidatos
+
+**Casos de Prueba:**
+
+| ID   | Descripción                     | Entrada                                  | Resultado Esperado                   | Estado |
+| ---- | ------------------------------- | ---------------------------------------- | ------------------------------------ | ------ |
+| T4.1 | Alta exitosa                    | Datos válidos completos                  | Candidato creado                     | ✅     |
+| T4.2 | Campo obligatorio vacío         | No ingresar un dato obligatorio          | Validación bloquea registro          | ✅     |
+| T4.3 | Duplicado por elección          | Duplicar un candidato en la elección     | Registro rechazado                   | ✅     |
+| T4.4 | Mismo candidato en otra elección| Ingresar un candidato para otra elección | Registro permitido                   | ✅     |
+| T4.5 | Elección inexistente            | Ingresar una elección inexistente        | Error “Elección no encontrada”       | ✅     |
+
+**Pruebas de Integración:**
+
+- ✅ El administrador puede agregar Candidatos
+- ✅ Los datos se persisten correctamente en la base de datos
+- ✅ El log de auditoría registra la creación del candidato
+- ✅ La interfaz muestra la lista actualizada de candidatos
+
 ### Cómo Ejecutar las Pruebas
 
 #### Pruebas Manuales
@@ -367,8 +386,6 @@ npm run test
 
 ## 📝 Próximas Historias de Usuario
 
-- [ ] **HU3:** Como administrador, quiero registrar a los votantes con su identificación y credenciales de acceso para que puedan participar en la elección.
-- [ ] **HU4:** Como administrador, quiero registrar a los candidatos de la elección para definir la lista de opciones disponibles al votar.
 - [ ] **HU5:** Como votante, quiero ver la lista de candidatos disponibles para seleccionar mi opción de voto.
 - [ ] **HU6:** Como votante, quiero seleccionar un candidato y emitir mi voto para participar en la elección.
 - [ ] **HU7:** Como sistema, debo asegurar que cada votante emita un único voto por elección para mantener la integridad del proceso.
@@ -377,4 +394,4 @@ npm run test
 - [ ] **HU10:** Como auditor, quiero ver un registro de acciones críticas para garantizar trazabilidad del proceso.
 
 ---
-**Última actualización:** 30 Septiembre 2025
+**Última actualización:** 10 Octubre 2025
