@@ -35,7 +35,7 @@ public class ElectionDto
     public DateTime StartDateUtc { get; set; }
     public DateTime EndDateUtc { get; set; }
     public string Status { get; set; } = "Scheduled";
-
     public int CandidateCount { get; set; }
     public int VoteCount { get; set; }
+    public bool IsActive { get; set; }
 }
