@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 import { AuthGuard } from "@/components/auth-guard"
-import { VotersTable } from "./voters-table"
+import { VotersTable } from "@/components/voters/voters-table"
 
 export default function VotersListPage() {
   return (
