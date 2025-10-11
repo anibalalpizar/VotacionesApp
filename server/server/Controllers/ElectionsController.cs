@@ -19,21 +19,23 @@ public class ElectionsController : ControllerBase
         _db = db;
     }
 
-    //Helpers
+    //  Helpers
 
     private static DateTime ToUtc(DateTime dt)
     {
         return dt.Kind switch
         {
-            DateTimeKind.Utc => dt,                       // ya está en UTC
-            DateTimeKind.Local => dt.ToUniversalTime(),   // convertir de local a UTC
-            DateTimeKind.Unspecified =>                   // viene sin zona: asume zona local del servidor
-                TimeZoneInfo.ConvertTimeToUtc(
-                    DateTime.SpecifyKind(dt, DateTimeKind.Local),
-                    TimeZoneInfo.Local)
+            DateTimeKind.Utc => dt,
+            DateTimeKind.Local => dt.ToUniversalTime(),
+            DateTimeKind.Unspecified => TimeZoneInfo.ConvertTimeToUtc(
+                                            DateTime.SpecifyKind(dt, DateTimeKind.Local),
+                                            TimeZoneInfo.Local),
+            _ => dt
         };
     }
 
+    private static DateTime AsUtc(DateTime dt)
+        => dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
 
     private static string NormalizeStatus(string? s)
         => string.IsNullOrWhiteSpace(s) ? "Scheduled" : s.Trim();
@@ -41,11 +43,6 @@ public class ElectionsController : ControllerBase
     private static bool IsValidStatus(string s)
         => s is "Scheduled" or "Active" or "Closed";
 
-    /// Forzamos que toda fecha se trate como UTC (evita invertir comparaciones).
-    private static DateTime AsUtc(DateTime dt)
-        => dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
-
-    /// Calcula estado e indicador de actividad según la hora actual (UTC).
     private static (string Status, bool IsActive) RuntimeStatus(DateTime? start, DateTime? end)
     {
         if (start is null || end is null) return ("Scheduled", false);
@@ -61,12 +58,9 @@ public class ElectionsController : ControllerBase
 
     private static string? ValidateDates(DateTime startUtc, DateTime endUtc)
     {
-        // Aseguramos Kind=Utc
         var s = AsUtc(startUtc);
         var e = AsUtc(endUtc);
-
-        if (s >= e)
-            return "La fecha de inicio debe ser menor a la fecha de fin.";
+        if (s >= e) return "La fecha de inicio debe ser menor a la fecha de fin.";
         return null;
     }
 
@@ -89,8 +83,11 @@ public class ElectionsController : ControllerBase
 
     // Endpoints
 
-    // POST: /api/elections  (crear elección)
+    // POST: /api/elections (crear)
     [HttpPost]
+    [ProducesResponseType(typeof(ElectionDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create([FromBody] CreateElectionDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -99,11 +96,11 @@ public class ElectionsController : ControllerBase
         if (string.IsNullOrWhiteSpace(name))
             return BadRequest(new { message = "El nombre de la elección es requerido." });
 
-        // Normalizar a UTC SIEMPRE
+        // Normalizar SIEMPRE a UTC
         var sUtc = ToUtc(dto.StartDateUtc);
         var eUtc = ToUtc(dto.EndDateUtc);
 
-        // Validar rango YA normalizado
+        // Validar rango (ya en UTC)
         if (sUtc >= eUtc)
             return BadRequest(new { message = "La fecha de inicio debe ser menor a la fecha de fin." });
 
@@ -111,11 +108,11 @@ public class ElectionsController : ControllerBase
         var exists = await _db.Elections.AnyAsync(e => e.Name == name, ct);
         if (exists) return Conflict(new { message = "Ya existe una elección con ese nombre." });
 
-        // Calcular estado con hora actual (UTC)
+        // Estado según la hora actual del servidor (UTC)
         var nowUtc = DateTime.UtcNow;
-        string status = nowUtc >= sUtc && nowUtc <= eUtc
-            ? "Active"
-            : (nowUtc < sUtc ? "Scheduled" : "Closed");
+        var status = nowUtc >= sUtc && nowUtc <= eUtc ? "Active"
+                   : nowUtc < sUtc ? "Scheduled"
+                                                      : "Closed";
 
         var entity = new Election
         {
@@ -137,11 +134,9 @@ public class ElectionsController : ControllerBase
             Status = status,
             CandidateCount = 0,
             VoteCount = 0,
-            IsActive = (nowUtc >= sUtc && nowUtc <= eUtc)
+            IsActive = nowUtc >= sUtc && nowUtc <= eUtc
         });
     }
-
-
 
     // GET: /api/elections (listar)
     [HttpGet]
@@ -187,7 +182,6 @@ public class ElectionsController : ControllerBase
     {
         var e = await _db.Elections.AsNoTracking()
                                    .FirstOrDefaultAsync(x => x.ElectionId == id, ct);
-
         if (e is null) return NotFound();
 
         var candidateCount = await _db.Candidates.CountAsync(c => c.ElectionId == id, ct);
@@ -197,9 +191,6 @@ public class ElectionsController : ControllerBase
     }
 
     // PUT: /api/elections/{id} (actualizar)
-    // Reglas:
-    // - Solo se permite editar fechas si Status actual en BD = "Scheduled".
-    // - Status permitido para guardar en BD: Scheduled | Active | Closed (validamos cadena).
     [HttpPut("{id:int}")]
     [ProducesResponseType(typeof(ElectionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -219,16 +210,18 @@ public class ElectionsController : ControllerBase
         if (dup)
             return Conflict(new { message = "Ya existe otra elección con ese nombre." });
 
-        // Normalizamos estado de entrada (si viene)
+        // Normalizamos estado entrante
         var newStatus = NormalizeStatus(dto.Status ?? e.Status ?? "Scheduled");
         if (!IsValidStatus(newStatus))
             return BadRequest(new { message = "Estado inválido. Use 'Scheduled', 'Active' o 'Closed'." });
 
-        // Si está en Scheduled en BD, permitimos editar fechas
+        // Si el estado actual en BD es Scheduled, permitimos cambiar fechas
         if ((e.Status ?? "Scheduled") == "Scheduled")
         {
-            var sUtc = AsUtc(dto.StartDateUtc);
-            var eUtc = AsUtc(dto.EndDateUtc);
+            // <<< USAR ToUtc TAMBIÉN AQUÍ >>>
+            var sUtc = ToUtc(dto.StartDateUtc);
+            var eUtc = ToUtc(dto.EndDateUtc);
+
             var dateError = ValidateDates(sUtc, eUtc);
             if (dateError is not null)
                 return BadRequest(new { message = dateError });
@@ -239,14 +232,13 @@ public class ElectionsController : ControllerBase
 
         e.Name = name;
 
-        // Validación mínima para dejar en Active
+        // Si se intenta forzar Active, validar rango
         if (newStatus == "Active")
         {
             if (e.StartDate is null || e.EndDate is null || e.StartDate >= e.EndDate)
                 return BadRequest(new { message = "No se puede activar: el rango de fechas es inválido." });
         }
 
-        // Guardamos el estado de BD (coherente con el CHECK de la tabla)
         e.Status = newStatus;
 
         await _db.SaveChangesAsync(ct);
