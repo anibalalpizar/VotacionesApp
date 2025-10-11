@@ -103,29 +103,31 @@ public class ElectionsController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateElectionDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-
         var name = (dto.Name ?? "").Trim();
         if (string.IsNullOrWhiteSpace(name))
             return BadRequest(new { message = "El nombre de la elección es requerido." });
-
-        // Normalizar SIEMPRE a UTC (interpretando Unspecified en _appTz)
-        var sUtc = dto.StartDateUtc.UtcDateTime;
-        var eUtc = dto.EndDateUtc.UtcDateTime;
+        // LOGGING PARA DEBUG: Ver qué llega del frontend
+        var nowUtc = DateTime.UtcNow;
+        Console.WriteLine($"Debug Create - Received StartDateUtc: {dto.StartDateUtc} (Offset: {dto.StartDateUtc.Offset}), EndDateUtc: {dto.EndDateUtc} (Offset: {dto.EndDateUtc.Offset}), Server Now: {nowUtc}");
+        // Normalizar a UTC: Si el frontend envía local (offset != 0 o Unspecified), convertir usando _appTz
+        var sUtc = ToUtc(dto.StartDateUtc.UtcDateTime);  // Fuerza conversión si Unspecified
+        var eUtc = ToUtc(dto.EndDateUtc.UtcDateTime);
+        // LOGGING: Ver el convertido
+        Console.WriteLine($"Debug Create - Converted StartUtc: {sUtc}, EndUtc: {eUtc}");
         // Validar rango (ya en UTC)
         var dateError = ValidateDates(sUtc, eUtc);
         if (dateError is not null)
             return BadRequest(new { message = dateError });
-
+        // Opcional: Validar que no sea fecha muy lejana (ej: >1 año futuro)
+        if (sUtc > nowUtc.AddYears(1))
+            return BadRequest(new { message = "La fecha de inicio no puede ser más de 1 año en el futuro." });
         // Nombre único
         var exists = await _db.Elections.AnyAsync(e => e.Name == name, ct);
         if (exists) return Conflict(new { message = "Ya existe una elección con ese nombre." });
-
         // Calcular estado inicial basado en now del servidor (para guardar en BD, auditoría)
-        var nowUtc = DateTime.UtcNow;
         var initialStatus = nowUtc >= sUtc && nowUtc <= eUtc
             ? "Active"
             : (nowUtc < sUtc ? "Scheduled" : "Closed");
-
         var entity = new Election
         {
             Name = name,
@@ -133,13 +135,14 @@ public class ElectionsController : ControllerBase
             EndDate = eUtc,
             Status = initialStatus  // Guardar para auditoría, pero no se usa en DTOs
         };
-
         _db.Elections.Add(entity);
         await _db.SaveChangesAsync(ct);
-
-        // Respuesta: Usar ToDto para estado dinámico (puede diferir si tiempo pasa entre cálculo y guardado)
+        // LOGGING: Confirmar guardado
+        Console.WriteLine($"Debug Create - Saved Election {entity.ElectionId}: Status={initialStatus}, Start={sUtc}, End={eUtc}");
+        // Respuesta: Usar ToDto para estado dinámico
         return CreatedAtAction(nameof(GetById), new { id = entity.ElectionId }, ToDto(entity, 0, 0));
     }
+
 
     // GET: /api/elections (listar)
     [HttpGet]
@@ -203,48 +206,43 @@ public class ElectionsController : ControllerBase
     {
         var e = await _db.Elections.FirstOrDefaultAsync(x => x.ElectionId == id, ct);
         if (e is null) return NotFound();
-
         var name = (dto.Name ?? "").Trim();
         if (string.IsNullOrWhiteSpace(name))
             return BadRequest(new { message = "El nombre de la elección es requerido." });
-
         // Nombre único (excluyendo la misma)
         var dup = await _db.Elections.AnyAsync(x => x.ElectionId != id && x.Name == name, ct);
         if (dup)
             return Conflict(new { message = "Ya existe otra elección con ese nombre." });
-
+        var nowUtc = DateTime.UtcNow;
         // Si cambian fechas (solo si estado actual permite, ej: Scheduled)
         if ((e.Status ?? "Scheduled") == "Scheduled")
         {
-            var sUtc = dto.StartDateUtc.UtcDateTime;
-            var eUtc = dto.EndDateUtc.UtcDateTime;
-
+            // LOGGING PARA DEBUG
+            Console.WriteLine($"Debug Update - Received StartDateUtc: {dto.StartDateUtc} (Offset: {dto.StartDateUtc.Offset}), EndDateUtc: {dto.EndDateUtc} (Offset: {dto.EndDateUtc.Offset}), Server Now: {nowUtc}");
+            var sUtc = ToUtc(dto.StartDateUtc.UtcDateTime);
+            var eUtc = ToUtc(dto.EndDateUtc.UtcDateTime);
+            Console.WriteLine($"Debug Update - Converted StartUtc: {sUtc}, EndUtc: {eUtc}");
             var dateError = ValidateDates(sUtc, eUtc);
             if (dateError is not null)
                 return BadRequest(new { message = dateError });
-
             e.StartDate = sUtc;
             e.EndDate = eUtc;
         }
-
         e.Name = name;
-
         // Status en DTO se ignora; siempre se calcula dinámicamente.
         // Pero para BD (auditoría), recalcular basado en nuevas fechas vs now
         if (e.StartDate.HasValue && e.EndDate.HasValue)
         {
-            var nowUtc = DateTime.UtcNow;
             var newStatusForBd = nowUtc >= e.StartDate.Value && nowUtc <= e.EndDate.Value
                 ? "Active"
                 : (nowUtc < e.StartDate.Value ? "Scheduled" : "Closed");
             e.Status = newStatusForBd;
         }
-
         await _db.SaveChangesAsync(ct);
-
+        // LOGGING: Confirmar guardado
+        Console.WriteLine($"Debug Update - Updated Election {id}: Status={e.Status}, Start={e.StartDate}, End={e.EndDate}");
         var candidateCount = await _db.Candidates.CountAsync(c => c.ElectionId == id, ct);
         var voteCount = await _db.Votes.CountAsync(v => v.ElectionId == id, ct);
-
         return Ok(ToDto(e, candidateCount, voteCount));  // Siempre dinámico
     }
 
