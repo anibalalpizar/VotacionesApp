@@ -13,35 +13,43 @@ namespace Server.Controllers;
 public class ElectionsController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private static TimeZoneInfo _appTz = TimeZoneInfo.Local; // zona por defecto
 
-    public ElectionsController(AppDbContext db)
+    public ElectionsController(AppDbContext db, IConfiguration cfg)
     {
         _db = db;
+
+        // Cargar zona horaria de la app (opcional en appsettings.json)
+        var tzId = cfg["App:TimeZoneId"];
+        if (!string.IsNullOrWhiteSpace(tzId))
+        {
+            try { _appTz = TimeZoneInfo.FindSystemTimeZoneById(tzId); }
+            catch { _appTz = TimeZoneInfo.Local; }
+        }
     }
 
-    //  Helpers
+    // ---------- Helpers ----------
 
+    // Convierte SIEMPRE a UTC, interpretando Unspecified en la zona de la app (_appTz).
     private static DateTime ToUtc(DateTime dt)
     {
         return dt.Kind switch
         {
             DateTimeKind.Utc => dt,
             DateTimeKind.Local => dt.ToUniversalTime(),
-            DateTimeKind.Unspecified => TimeZoneInfo.ConvertTimeToUtc(
-                                            DateTime.SpecifyKind(dt, DateTimeKind.Local),
-                                            TimeZoneInfo.Local),
+            DateTimeKind.Unspecified => TimeZoneInfo.ConvertTimeToUtc(dt, _appTz),
             _ => dt
         };
     }
 
-    private static DateTime AsUtc(DateTime dt)
-        => dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+    private static DateTime AsUtc(DateTime dt) =>
+        dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
 
-    private static string NormalizeStatus(string? s)
-        => string.IsNullOrWhiteSpace(s) ? "Scheduled" : s.Trim();
+    private static string NormalizeStatus(string? s) =>
+        string.IsNullOrWhiteSpace(s) ? "Scheduled" : s.Trim();
 
-    private static bool IsValidStatus(string s)
-        => s is "Scheduled" or "Active" or "Closed";
+    private static bool IsValidStatus(string s) =>
+        s is "Scheduled" or "Active" or "Closed";
 
     private static (string Status, bool IsActive) RuntimeStatus(DateTime? start, DateTime? end)
     {
@@ -81,9 +89,9 @@ public class ElectionsController : ControllerBase
         };
     }
 
-    // Endpoints
+    // ---------- Endpoints ----------
 
-    // POST: /api/elections (crear)
+    // POST: /api/elections  (crear)
     [HttpPost]
     [ProducesResponseType(typeof(ElectionDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -96,7 +104,7 @@ public class ElectionsController : ControllerBase
         if (string.IsNullOrWhiteSpace(name))
             return BadRequest(new { message = "El nombre de la elección es requerido." });
 
-        // Normalizar SIEMPRE a UTC
+        // Normalizar SIEMPRE a UTC (interpretando Unspecified en _appTz)
         var sUtc = ToUtc(dto.StartDateUtc);
         var eUtc = ToUtc(dto.EndDateUtc);
 
@@ -108,11 +116,11 @@ public class ElectionsController : ControllerBase
         var exists = await _db.Elections.AnyAsync(e => e.Name == name, ct);
         if (exists) return Conflict(new { message = "Ya existe una elección con ese nombre." });
 
-        // Estado según la hora actual del servidor (UTC)
+        // Estado según la hora actual UTC
         var nowUtc = DateTime.UtcNow;
-        var status = nowUtc >= sUtc && nowUtc <= eUtc ? "Active"
-                   : nowUtc < sUtc ? "Scheduled"
-                                                      : "Closed";
+        var status = nowUtc >= sUtc && nowUtc <= eUtc
+            ? "Active"
+            : (nowUtc < sUtc ? "Scheduled" : "Closed");
 
         var entity = new Election
         {
@@ -210,7 +218,6 @@ public class ElectionsController : ControllerBase
         if (dup)
             return Conflict(new { message = "Ya existe otra elección con ese nombre." });
 
-        // Normalizamos estado entrante
         var newStatus = NormalizeStatus(dto.Status ?? e.Status ?? "Scheduled");
         if (!IsValidStatus(newStatus))
             return BadRequest(new { message = "Estado inválido. Use 'Scheduled', 'Active' o 'Closed'." });
@@ -218,7 +225,6 @@ public class ElectionsController : ControllerBase
         // Si el estado actual en BD es Scheduled, permitimos cambiar fechas
         if ((e.Status ?? "Scheduled") == "Scheduled")
         {
-            // <<< USAR ToUtc TAMBIÉN AQUÍ >>>
             var sUtc = ToUtc(dto.StartDateUtc);
             var eUtc = ToUtc(dto.EndDateUtc);
 
@@ -232,7 +238,6 @@ public class ElectionsController : ControllerBase
 
         e.Name = name;
 
-        // Si se intenta forzar Active, validar rango
         if (newStatus == "Active")
         {
             if (e.StartDate is null || e.EndDate is null || e.StartDate >= e.EndDate)
