@@ -21,6 +21,20 @@ public class ElectionsController : ControllerBase
 
     //Helpers
 
+    private static DateTime ToUtc(DateTime dt)
+    {
+        return dt.Kind switch
+        {
+            DateTimeKind.Utc => dt,                       // ya está en UTC
+            DateTimeKind.Local => dt.ToUniversalTime(),   // convertir de local a UTC
+            DateTimeKind.Unspecified =>                   // viene sin zona: asume zona local del servidor
+                TimeZoneInfo.ConvertTimeToUtc(
+                    DateTime.SpecifyKind(dt, DateTimeKind.Local),
+                    TimeZoneInfo.Local)
+        };
+    }
+
+
     private static string NormalizeStatus(string? s)
         => string.IsNullOrWhiteSpace(s) ? "Scheduled" : s.Trim();
 
@@ -77,58 +91,44 @@ public class ElectionsController : ControllerBase
 
     // POST: /api/elections  (crear elección)
     [HttpPost]
-    [ProducesResponseType(typeof(ElectionDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create([FromBody] CreateElectionDto dto, CancellationToken ct)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        if (!ModelState.IsValid) return BadRequest(ModelState);
 
         var name = (dto.Name ?? "").Trim();
         if (string.IsNullOrWhiteSpace(name))
             return BadRequest(new { message = "El nombre de la elección es requerido." });
 
-        // Validar rango y que vengan en UTC (si mantienes esa regla)
-        var dateError = ValidateDates(dto.StartDateUtc, dto.EndDateUtc);
-        if (dateError is not null)
-            return BadRequest(new { message = dateError });
+        // Normalizar a UTC SIEMPRE
+        var sUtc = ToUtc(dto.StartDateUtc);
+        var eUtc = ToUtc(dto.EndDateUtc);
+
+        // Validar rango YA normalizado
+        if (sUtc >= eUtc)
+            return BadRequest(new { message = "La fecha de inicio debe ser menor a la fecha de fin." });
 
         // Nombre único
         var exists = await _db.Elections.AnyAsync(e => e.Name == name, ct);
-        if (exists)
-            return Conflict(new { message = "Ya existe una elección con ese nombre." });
+        if (exists) return Conflict(new { message = "Ya existe una elección con ese nombre." });
 
-        // Tomamos las fechas del DTO (ya en UTC)
-        var sUtc = dto.StartDateUtc;
-        var eUtc = dto.EndDateUtc;
-
-        // Hora actual del servidor en UTC
+        // Calcular estado con hora actual (UTC)
         var nowUtc = DateTime.UtcNow;
+        string status = nowUtc >= sUtc && nowUtc <= eUtc
+            ? "Active"
+            : (nowUtc < sUtc ? "Scheduled" : "Closed");
 
-        // Determinar estado inicial
-        string status;
-        if (nowUtc >= sUtc && nowUtc <= eUtc)
-            status = "Active";
-        else if (nowUtc < sUtc)
-            status = "Scheduled";
-        else
-            status = "Closed";
-
-        // Crear entidad con el estado calculado
         var entity = new Election
         {
             Name = name,
             StartDate = sUtc,
             EndDate = eUtc,
-            Status = status  // <- ya no está hardcodeado
+            Status = status
         };
 
         _db.Elections.Add(entity);
         await _db.SaveChangesAsync(ct);
 
-        // Armar DTO de salida (si ya tienes ToDto, puedes usarlo también)
-        var outDto = new ElectionDto
+        return CreatedAtAction(nameof(GetById), new { id = entity.ElectionId }, new ElectionDto
         {
             ElectionId = entity.ElectionId,
             Name = entity.Name,
@@ -138,10 +138,9 @@ public class ElectionsController : ControllerBase
             CandidateCount = 0,
             VoteCount = 0,
             IsActive = (nowUtc >= sUtc && nowUtc <= eUtc)
-        };
-
-        return CreatedAtAction(nameof(GetById), new { id = entity.ElectionId }, outDto);
+        });
     }
+
 
 
     // GET: /api/elections (listar)
