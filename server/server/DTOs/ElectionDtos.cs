@@ -8,10 +8,10 @@ public class CreateElectionDto
     public string Name { get; set; } = "";
 
     [Required]
-    public DateTimeOffset StartDateUtc { get; set; }
+    public DateTime StartDateUtc { get; set; }
 
     [Required]
-    public DateTimeOffset EndDateUtc { get; set; }
+    public DateTime EndDateUtc { get; set; }
 }
 
 public class UpdateElectionDto
@@ -20,10 +20,10 @@ public class UpdateElectionDto
     public string Name { get; set; } = "";
 
     [Required]
-    public DateTimeOffset StartDateUtc { get; set; }
+    public DateTime StartDateUtc { get; set; }
 
     [Required]
-    public DateTimeOffset EndDateUtc { get; set; }
+    public DateTime EndDateUtc { get; set; }
 
     public string? Status { get; set; }
 }
