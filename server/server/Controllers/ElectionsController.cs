@@ -105,9 +105,8 @@ public class ElectionsController : ControllerBase
             return BadRequest(new { message = "El nombre de la elección es requerido." });
 
         // Normalizar SIEMPRE a UTC (interpretando Unspecified en _appTz)
-        var sUtc = ToUtc(dto.StartDateUtc);
-        var eUtc = ToUtc(dto.EndDateUtc);
-
+        var sUtc = dto.StartDateUtc.UtcDateTime;
+        var eUtc = dto.EndDateUtc.UtcDateTime;
         // Validar rango (ya en UTC)
         if (sUtc >= eUtc)
             return BadRequest(new { message = "La fecha de inicio debe ser menor a la fecha de fin." });
@@ -225,8 +224,8 @@ public class ElectionsController : ControllerBase
         // Si el estado actual en BD es Scheduled, permitimos cambiar fechas
         if ((e.Status ?? "Scheduled") == "Scheduled")
         {
-            var sUtc = ToUtc(dto.StartDateUtc);
-            var eUtc = ToUtc(dto.EndDateUtc);
+            var sUtc = dto.StartDateUtc.UtcDateTime;
+            var eUtc = dto.EndDateUtc.UtcDateTime;
 
             var dateError = ValidateDates(sUtc, eUtc);
             if (dateError is not null)
