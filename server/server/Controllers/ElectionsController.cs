@@ -13,13 +13,14 @@ namespace Server.Controllers;
 public class ElectionsController : ControllerBase
 {
     private readonly AppDbContext _db;
-    private static TimeZoneInfo _appTz = TimeZoneInfo.Local; // zona por defecto
+    private static TimeZoneInfo _appTz = TimeZoneInfo.Local; // zona por defecto de la app
 
     public ElectionsController(AppDbContext db, IConfiguration cfg)
     {
         _db = db;
 
-        // Cargar zona horaria de la app (opcional en appsettings.json)
+        // Permite configurar la zona horaria de la app en appsettings.json:
+        // "App": { "TimeZoneId": "Central America Standard Time" }
         var tzId = cfg["App:TimeZoneId"];
         if (!string.IsNullOrWhiteSpace(tzId))
         {
@@ -28,18 +29,38 @@ public class ElectionsController : ControllerBase
         }
     }
 
-    // ---------- Helpers ----------
+    // =======================
+    //         Helpers
+    // =======================
 
-    // Convierte SIEMPRE a UTC, interpretando Unspecified en la zona de la app (_appTz).
-    private static DateTime ToUtc(DateTime dt)
+    // Lee el offset de la zona horaria del cliente desde un header enviado por el front.
+    // El front puede enviar: new Date().getTimezoneOffset() (minutos “behind UTC”)
+    // y nosotros invertimos el signo para obtener el offset real (+/-).
+    private TimeSpan GetClientOffset()
     {
-        return dt.Kind switch
+        if (Request.Headers.TryGetValue("X-Client-Offset", out var h) &&
+            int.TryParse(h.ToString(), out var minutes))
         {
-            DateTimeKind.Utc => dt,
-            DateTimeKind.Local => dt.ToUniversalTime(),
-            DateTimeKind.Unspecified => TimeZoneInfo.ConvertTimeToUtc(dt, _appTz),
-            _ => dt
-        };
+            // JS retorna minutos “behind UTC”, ej 360 en UTC-6, por eso lo invertimos.
+            return TimeSpan.FromMinutes(-minutes);
+        }
+        // Fallback: usar la zona configurada de la app
+        return _appTz.GetUtcOffset(DateTime.UtcNow);
+    }
+
+    // Normaliza SIEMPRE a UTC lo que venga en el DTO (DateTimeOffset).
+    // - Si trae offset/Z correcto, se respeta.
+    // - Si viene “plano” (offset 0 pero en realidad era hora local del usuario),
+    //   lo reconstruimos usando el offset del cliente provisto por header.
+    private DateTime NormalizeFromClient(DateTimeOffset dtoValue)
+    {
+        if (dtoValue.Offset != TimeSpan.Zero)
+            return dtoValue.UtcDateTime;
+
+        var clientOffset = GetClientOffset();
+        var localClock = dtoValue.DateTime;                  // lo que digitó el usuario
+        var rebuilt = new DateTimeOffset(localClock, clientOffset);
+        return rebuilt.UtcDateTime;                          // guardamos en UTC
     }
 
     private static DateTime AsUtc(DateTime dt) =>
@@ -51,6 +72,7 @@ public class ElectionsController : ControllerBase
     private static bool IsValidStatus(string s) =>
         s is "Scheduled" or "Active" or "Closed";
 
+    // Calcula estado “en vivo” contra la hora actual del servidor (UTC)
     private static (string Status, bool IsActive) RuntimeStatus(DateTime? start, DateTime? end)
     {
         if (start is null || end is null) return ("Scheduled", false);
@@ -58,9 +80,6 @@ public class ElectionsController : ControllerBase
         var s = AsUtc(start.Value);
         var e = AsUtc(end.Value);
         var now = DateTime.UtcNow;
-
-        // Log temporal para debug (remover en producción; usa ILogger si lo inyectas)
-        Console.WriteLine($"Debug RuntimeStatus: Start={s:yyyy-MM-dd HH:mm:ss}Z, End={e:yyyy-MM-dd HH:mm:ss}Z, Now={now:yyyy-MM-dd HH:mm:ss}Z -> {(now < s ? "Scheduled" : now > e ? "Closed" : "Active")}");
 
         if (now < s) return ("Scheduled", false);
         if (now > e) return ("Closed", false);
@@ -75,7 +94,6 @@ public class ElectionsController : ControllerBase
         return null;
     }
 
-    // SIEMPRE calcular dinámicamente basado en fechas vs now del servidor (ignorar Status de BD)
     private static ElectionDto ToDto(Election e, int candidateCount, int voteCount)
     {
         var (status, isActive) = RuntimeStatus(e.StartDate, e.EndDate);
@@ -86,16 +104,18 @@ public class ElectionsController : ControllerBase
             Name = e.Name,
             StartDateUtc = e.StartDate is null ? DateTime.MinValue : AsUtc(e.StartDate.Value),
             EndDateUtc = e.EndDate is null ? DateTime.MinValue : AsUtc(e.EndDate.Value),
-            Status = status,  // Calculado dinámicamente
+            Status = status,            // calculado dinámicamente
             CandidateCount = candidateCount,
             VoteCount = voteCount,
-            IsActive = isActive  // true solo si "Active"
+            IsActive = isActive
         };
     }
 
-    // ---------- Endpoints ----------
+    // =======================
+    //        Endpoints
+    // =======================
 
-    // POST: /api/elections  (crear)
+    // POST: /api/elections (crear)
     [HttpPost]
     [ProducesResponseType(typeof(ElectionDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -103,46 +123,43 @@ public class ElectionsController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateElectionDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
+
         var name = (dto.Name ?? "").Trim();
         if (string.IsNullOrWhiteSpace(name))
             return BadRequest(new { message = "El nombre de la elección es requerido." });
-        // LOGGING PARA DEBUG: Ver qué llega del frontend
-        var nowUtc = DateTime.UtcNow;
-        Console.WriteLine($"Debug Create - Received StartDateUtc: {dto.StartDateUtc} (Offset: {dto.StartDateUtc.Offset}), EndDateUtc: {dto.EndDateUtc} (Offset: {dto.EndDateUtc.Offset}), Server Now: {nowUtc}");
-        // Normalizar a UTC: Si el frontend envía local (offset != 0 o Unspecified), convertir usando _appTz
-        var sUtc = ToUtc(dto.StartDateUtc.UtcDateTime);  // Fuerza conversión si Unspecified
-        var eUtc = ToUtc(dto.EndDateUtc.UtcDateTime);
-        // LOGGING: Ver el convertido
-        Console.WriteLine($"Debug Create - Converted StartUtc: {sUtc}, EndUtc: {eUtc}");
-        // Validar rango (ya en UTC)
+
+        // Normalizar SIEMPRE a UTC, tolerando fechas “planas” del front
+        var sUtc = NormalizeFromClient(dto.StartDateUtc);
+        var eUtc = NormalizeFromClient(dto.EndDateUtc);
+
         var dateError = ValidateDates(sUtc, eUtc);
         if (dateError is not null)
             return BadRequest(new { message = dateError });
-        // Opcional: Validar que no sea fecha muy lejana (ej: >1 año futuro)
-        if (sUtc > nowUtc.AddYears(1))
-            return BadRequest(new { message = "La fecha de inicio no puede ser más de 1 año en el futuro." });
+
         // Nombre único
         var exists = await _db.Elections.AnyAsync(e => e.Name == name, ct);
-        if (exists) return Conflict(new { message = "Ya existe una elección con ese nombre." });
-        // Calcular estado inicial basado en now del servidor (para guardar en BD, auditoría)
+        if (exists)
+            return Conflict(new { message = "Ya existe una elección con ese nombre." });
+
+        // Guardamos un estado inicial (para auditoría). El DTO siempre reporta estado dinámico.
+        var nowUtc = DateTime.UtcNow;
         var initialStatus = nowUtc >= sUtc && nowUtc <= eUtc
             ? "Active"
             : (nowUtc < sUtc ? "Scheduled" : "Closed");
+
         var entity = new Election
         {
             Name = name,
             StartDate = sUtc,
             EndDate = eUtc,
-            Status = initialStatus  // Guardar para auditoría, pero no se usa en DTOs
+            Status = initialStatus
         };
+
         _db.Elections.Add(entity);
         await _db.SaveChangesAsync(ct);
-        // LOGGING: Confirmar guardado
-        Console.WriteLine($"Debug Create - Saved Election {entity.ElectionId}: Status={initialStatus}, Start={sUtc}, End={eUtc}");
-        // Respuesta: Usar ToDto para estado dinámico
+
         return CreatedAtAction(nameof(GetById), new { id = entity.ElectionId }, ToDto(entity, 0, 0));
     }
-
 
     // GET: /api/elections (listar)
     [HttpGet]
@@ -193,7 +210,7 @@ public class ElectionsController : ControllerBase
         var candidateCount = await _db.Candidates.CountAsync(c => c.ElectionId == id, ct);
         var voteCount = await _db.Votes.CountAsync(v => v.ElectionId == id, ct);
 
-        return Ok(ToDto(e, candidateCount, voteCount));  // Siempre dinámico
+        return Ok(ToDto(e, candidateCount, voteCount));
     }
 
     // PUT: /api/elections/{id} (actualizar)
@@ -206,44 +223,47 @@ public class ElectionsController : ControllerBase
     {
         var e = await _db.Elections.FirstOrDefaultAsync(x => x.ElectionId == id, ct);
         if (e is null) return NotFound();
+
         var name = (dto.Name ?? "").Trim();
         if (string.IsNullOrWhiteSpace(name))
             return BadRequest(new { message = "El nombre de la elección es requerido." });
+
         // Nombre único (excluyendo la misma)
         var dup = await _db.Elections.AnyAsync(x => x.ElectionId != id && x.Name == name, ct);
         if (dup)
             return Conflict(new { message = "Ya existe otra elección con ese nombre." });
-        var nowUtc = DateTime.UtcNow;
-        // Si cambian fechas (solo si estado actual permite, ej: Scheduled)
+
+        // Solo permitimos cambiar fechas cuando el estado en BD es Scheduled
         if ((e.Status ?? "Scheduled") == "Scheduled")
         {
-            // LOGGING PARA DEBUG
-            Console.WriteLine($"Debug Update - Received StartDateUtc: {dto.StartDateUtc} (Offset: {dto.StartDateUtc.Offset}), EndDateUtc: {dto.EndDateUtc} (Offset: {dto.EndDateUtc.Offset}), Server Now: {nowUtc}");
-            var sUtc = ToUtc(dto.StartDateUtc.UtcDateTime);
-            var eUtc = ToUtc(dto.EndDateUtc.UtcDateTime);
-            Console.WriteLine($"Debug Update - Converted StartUtc: {sUtc}, EndUtc: {eUtc}");
+            var sUtc = NormalizeFromClient(dto.StartDateUtc);
+            var eUtc = NormalizeFromClient(dto.EndDateUtc);
+
             var dateError = ValidateDates(sUtc, eUtc);
             if (dateError is not null)
                 return BadRequest(new { message = dateError });
+
             e.StartDate = sUtc;
             e.EndDate = eUtc;
         }
+
         e.Name = name;
-        // Status en DTO se ignora; siempre se calcula dinámicamente.
-        // Pero para BD (auditoría), recalcular basado en nuevas fechas vs now
+
+        // Para auditoría, ajustar el Status en BD según las nuevas fechas
         if (e.StartDate.HasValue && e.EndDate.HasValue)
         {
-            var newStatusForBd = nowUtc >= e.StartDate.Value && nowUtc <= e.EndDate.Value
+            var nowUtc = DateTime.UtcNow;
+            e.Status = nowUtc >= e.StartDate.Value && nowUtc <= e.EndDate.Value
                 ? "Active"
                 : (nowUtc < e.StartDate.Value ? "Scheduled" : "Closed");
-            e.Status = newStatusForBd;
         }
+
         await _db.SaveChangesAsync(ct);
-        // LOGGING: Confirmar guardado
-        Console.WriteLine($"Debug Update - Updated Election {id}: Status={e.Status}, Start={e.StartDate}, End={e.EndDate}");
+
         var candidateCount = await _db.Candidates.CountAsync(c => c.ElectionId == id, ct);
         var voteCount = await _db.Votes.CountAsync(v => v.ElectionId == id, ct);
-        return Ok(ToDto(e, candidateCount, voteCount));  // Siempre dinámico
+
+        return Ok(ToDto(e, candidateCount, voteCount));
     }
 
     // DELETE: /api/elections/{id}
