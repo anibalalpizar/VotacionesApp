@@ -19,7 +19,7 @@ public class ElectionsController : ControllerBase
         _db = db;
     }
 
-    // ----------------- Helpers -----------------
+    //Helpers
 
     private static string NormalizeStatus(string? s)
         => string.IsNullOrWhiteSpace(s) ? "Scheduled" : s.Trim();
@@ -73,7 +73,7 @@ public class ElectionsController : ControllerBase
         };
     }
 
-    // ----------------- Endpoints -----------------
+    // Endpoints
 
     // POST: /api/elections  (crear elección)
     [HttpPost]
@@ -89,10 +89,8 @@ public class ElectionsController : ControllerBase
         if (string.IsNullOrWhiteSpace(name))
             return BadRequest(new { message = "El nombre de la elección es requerido." });
 
-        // Normalizamos a UTC y validamos rango
-        var sUtc = AsUtc(dto.StartDateUtc);
-        var eUtc = AsUtc(dto.EndDateUtc);
-        var dateError = ValidateDates(sUtc, eUtc);
+        // Validar rango y que vengan en UTC (si mantienes esa regla)
+        var dateError = ValidateDates(dto.StartDateUtc, dto.EndDateUtc);
         if (dateError is not null)
             return BadRequest(new { message = dateError });
 
@@ -101,22 +99,50 @@ public class ElectionsController : ControllerBase
         if (exists)
             return Conflict(new { message = "Ya existe una elección con ese nombre." });
 
-        // Guardamos con un estado válido por la restricción CHECK (programada inicialmente)
+        // Tomamos las fechas del DTO (ya en UTC)
+        var sUtc = dto.StartDateUtc;
+        var eUtc = dto.EndDateUtc;
+
+        // Hora actual del servidor en UTC
+        var nowUtc = DateTime.UtcNow;
+
+        // Determinar estado inicial
+        string status;
+        if (nowUtc >= sUtc && nowUtc <= eUtc)
+            status = "Active";
+        else if (nowUtc < sUtc)
+            status = "Scheduled";
+        else
+            status = "Closed";
+
+        // Crear entidad con el estado calculado
         var entity = new Election
         {
             Name = name,
             StartDate = sUtc,
             EndDate = eUtc,
-            Status = "Scheduled"
+            Status = status  // <- ya no está hardcodeado
         };
 
         _db.Elections.Add(entity);
         await _db.SaveChangesAsync(ct);
 
-        // Calculamos estado/actividad en tiempo de ejecución para la respuesta
-        var dtoOut = ToDto(entity, candidateCount: 0, voteCount: 0);
-        return CreatedAtAction(nameof(GetById), new { id = entity.ElectionId }, dtoOut);
+        // Armar DTO de salida (si ya tienes ToDto, puedes usarlo también)
+        var outDto = new ElectionDto
+        {
+            ElectionId = entity.ElectionId,
+            Name = entity.Name,
+            StartDateUtc = entity.StartDate ?? DateTime.MinValue,
+            EndDateUtc = entity.EndDate ?? DateTime.MinValue,
+            Status = status,
+            CandidateCount = 0,
+            VoteCount = 0,
+            IsActive = (nowUtc >= sUtc && nowUtc <= eUtc)
+        };
+
+        return CreatedAtAction(nameof(GetById), new { id = entity.ElectionId }, outDto);
     }
+
 
     // GET: /api/elections (listar)
     [HttpGet]
