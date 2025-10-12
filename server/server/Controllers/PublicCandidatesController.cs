@@ -10,7 +10,7 @@ namespace Server.Controllers
     [Route("api/public/candidates")]
     // Solo usuarios autenticados pueden ver la lista
     [Authorize(Roles = "VOTER,ADMIN")]
-    // Esto por si se quiere que sea sin login
+    // Si se quiere sin login:
     // [AllowAnonymous]
     public class PublicCandidatesController : ControllerBase
     {
@@ -21,43 +21,61 @@ namespace Server.Controllers
             _db = db;
         }
 
-        /// Devuelve la lista de candidatos de la elección activa
         [HttpGet("active")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetActiveCandidates(CancellationToken ct)
+        public async Task<IActionResult> GetActiveElectionsWithCandidates(CancellationToken ct)
         {
             var now = DateTime.UtcNow;
 
-            // Encontrar elección activa por fechas (fuente de verdad)
-            var activeElection = await _db.Elections
+            // 1) Elecciones activas por estado y rango de fechas
+            var elections = await _db.Elections
                 .AsNoTracking()
-                .Where(e => e.StartDate != null && e.EndDate != null
-                         && e.StartDate <= now && now <= e.EndDate)
+                .Where(e =>
+                    e.Status == "Active" &&
+                    e.StartDate != null && e.EndDate != null &&
+                    e.StartDate <= now && now <= e.EndDate)
                 .OrderBy(e => e.StartDate)
-                .FirstOrDefaultAsync(ct);
+                .Select(e => new { e.ElectionId, e.Name })
+                .ToListAsync(ct);
 
-            if (activeElection is null)
-                return NotFound(new { message = "No hay una elección activa en este momento." });
+            if (elections.Count == 0)
+                return NotFound(new { message = "No hay elecciones activas en este momento." });
 
-            var items = await _db.Candidates
+            var electionIds = elections.Select(e => e.ElectionId).ToList();
+
+            // 2) Candidatos de TODAS esas elecciones 
+            var candidates = await _db.Candidates
                 .AsNoTracking()
-                .Where(c => c.ElectionId == activeElection.ElectionId)
+                .Where(c => electionIds.Contains(c.ElectionId))
                 .OrderBy(c => c.Name)
-                .Select(c => new CandidateListItemDto
+                .Select(c => new
                 {
-                    CandidateId = c.CandidateId,
-                    Name = c.Name,
-                    Party = c.Party
+                    c.CandidateId,
+                    c.Name,
+                    c.Party,
+                    c.ElectionId
                 })
                 .ToListAsync(ct);
 
-            return Ok(new
+            // 3) Arma respuesta agrupada por elección
+            var result = elections.Select(e => new
             {
-                electionId = activeElection.ElectionId,
-                electionName = activeElection.Name,
-                candidates = items
+                electionId = e.ElectionId,
+                electionName = e.Name,
+                candidates = candidates
+                    .Where(c => c.ElectionId == e.ElectionId)
+                    .Select(c => new CandidateListItemDto
+                    {
+                        CandidateId = c.CandidateId,
+                        Name = c.Name,
+                        Party = c.Party
+                    })
+                    .ToList()
             });
+
+            return Ok(result);
         }
+
     }
 }

@@ -29,29 +29,28 @@ public class ElectionsController : ControllerBase
         }
     }
 
-    // =======================
+
     //         Helpers
-    // =======================
 
     // Lee el offset de la zona horaria del cliente desde un header enviado por el front.
     // El front puede enviar: new Date().getTimezoneOffset() (minutos “behind UTC”)
-    // y nosotros invertimos el signo para obtener el offset real (+/-).
+    // y acá invertimos el signo para obtener el offset real (+/-).
     private TimeSpan GetClientOffset()
     {
         if (Request.Headers.TryGetValue("X-Client-Offset", out var h) &&
             int.TryParse(h.ToString(), out var minutes))
         {
-            // JS retorna minutos “behind UTC”, ej 360 en UTC-6, por eso lo invertimos.
+            // JS retorna minutos “behind UTC”, ej 360 en UTC-6, por eso se invierte.
             return TimeSpan.FromMinutes(-minutes);
         }
-        // Fallback: usar la zona configurada de la app
+        //zona configurada de la app
         return _appTz.GetUtcOffset(DateTime.UtcNow);
     }
 
     // Normaliza SIEMPRE a UTC lo que venga en el DTO (DateTimeOffset).
     // - Si trae offset/Z correcto, se respeta.
     // - Si viene “plano” (offset 0 pero en realidad era hora local del usuario),
-    //   lo reconstruimos usando el offset del cliente provisto por header.
+    //   se reconstruye usando el offset del cliente provisto por header.
     private DateTime NormalizeFromClient(DateTimeOffset dtoValue)
     {
         if (dtoValue.Offset != TimeSpan.Zero)
@@ -60,7 +59,7 @@ public class ElectionsController : ControllerBase
         var clientOffset = GetClientOffset();
         var localClock = dtoValue.DateTime;                  // lo que digitó el usuario
         var rebuilt = new DateTimeOffset(localClock, clientOffset);
-        return rebuilt.UtcDateTime;                          // guardamos en UTC
+        return rebuilt.UtcDateTime;                          // guarda en UTC
     }
 
     private static DateTime AsUtc(DateTime dt) =>
@@ -111,9 +110,7 @@ public class ElectionsController : ControllerBase
         };
     }
 
-    // =======================
     //        Endpoints
-    // =======================
 
     // POST: /api/elections (crear)
     [HttpPost]
@@ -141,7 +138,7 @@ public class ElectionsController : ControllerBase
         if (exists)
             return Conflict(new { message = "Ya existe una elección con ese nombre." });
 
-        // Guardamos un estado inicial (para auditoría). El DTO siempre reporta estado dinámico.
+        // Guardam un estado inicial (para auditoría). El DTO siempre reporta estado dinámico.
         var nowUtc = DateTime.UtcNow;
         var initialStatus = nowUtc >= sUtc && nowUtc <= eUtc
             ? "Active"
@@ -233,7 +230,7 @@ public class ElectionsController : ControllerBase
         if (dup)
             return Conflict(new { message = "Ya existe otra elección con ese nombre." });
 
-        // Solo permitimos cambiar fechas cuando el estado en BD es Scheduled
+        // Solo se permite cambiar fechas cuando el estado en BD es Scheduled
         if ((e.Status ?? "Scheduled") == "Scheduled")
         {
             var sUtc = NormalizeFromClient(dto.StartDateUtc);
@@ -249,7 +246,7 @@ public class ElectionsController : ControllerBase
 
         e.Name = name;
 
-        // Para auditoría, ajustar el Status en BD según las nuevas fechas
+        // Para auditoría, (ajustar el Status en BD según las nuevas fechas)
         if (e.StartDate.HasValue && e.EndDate.HasValue)
         {
             var nowUtc = DateTime.UtcNow;
