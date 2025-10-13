@@ -190,7 +190,7 @@ export async function getAllElectionsAction(
       }
     }
 
-    const result: GetAllElectionsResponse = await response.json()
+      const result: GetAllElectionsResponse = await response.json()
 
     return {
       success: true,
@@ -286,7 +286,6 @@ export async function updateElectionAction(
     name: string
     startDateUtc: string
     endDateUtc: string
-    status: string
   }
 ) {
   const token = await getAuthToken()
@@ -302,7 +301,6 @@ export async function updateElectionAction(
     name: data.name.trim(),
     startDateUtc: data.startDateUtc,
     endDateUtc: data.endDateUtc,
-    status: data.status,
   }
 
   try {
