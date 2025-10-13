@@ -25,7 +25,6 @@ public class UpdateElectionDto
     [Required]
     public DateTimeOffset EndDateUtc { get; set; }
 
-    public string? Status { get; set; }
 }
 
 public class ElectionDto

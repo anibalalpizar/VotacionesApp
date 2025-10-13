@@ -51,7 +51,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.ElectionId).ValueGeneratedOnAdd();
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
             e.HasIndex(x => x.Name).IsUnique();
-            e.Property(x => x.Status).HasMaxLength(20);
         });
 
 
