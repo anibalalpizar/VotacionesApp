@@ -60,9 +60,9 @@ export function EditElectionDialog({
 
       setFormData({
         name: election.name,
-        startDate: startDate.toISOString().split('T')[0],
+        startDate: startDate.toISOString().split("T")[0],
         startTime: startDate.toTimeString().slice(0, 5),
-        endDate: endDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split("T")[0],
         endTime: endDate.toTimeString().slice(0, 5),
         status: election.status,
       })
@@ -71,11 +71,15 @@ export function EditElectionDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!election) return
 
-    const startDateUtc = new Date(`${formData.startDate}T${formData.startTime}:00.000Z`).toISOString()
-    const endDateUtc = new Date(`${formData.endDate}T${formData.endTime}:00.000Z`).toISOString()
+    const startDateUtc = new Date(
+      `${formData.startDate}T${formData.startTime}:00.000Z`
+    ).toISOString()
+    const endDateUtc = new Date(
+      `${formData.endDate}T${formData.endTime}:00.000Z`
+    ).toISOString()
 
     setIsSubmitting(true)
     try {
@@ -83,7 +87,6 @@ export function EditElectionDialog({
         name: formData.name,
         startDateUtc,
         endDateUtc,
-        status: formData.status,
       })
 
       if (result.success) {
@@ -126,14 +129,16 @@ export function EditElectionDialog({
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Las fechas solo pueden editarse cuando la elección está en estado &quot;Borrador&quot;.
+                    Las fechas solo pueden editarse cuando la elección está en
+                    estado &quot;Borrador&quot;.
                   </AlertDescription>
                 </Alert>
               )}
 
               <div className="space-y-2">
                 <Label htmlFor="edit-name">
-                  Nombre de la Elección <span className="text-destructive">*</span>
+                  Nombre de la Elección{" "}
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="edit-name"
@@ -162,7 +167,8 @@ export function EditElectionDialog({
 
                 <div className="space-y-2">
                   <Label htmlFor="edit-startTime">
-                    Hora de Inicio (UTC) <span className="text-destructive">*</span>
+                    Hora de Inicio (UTC){" "}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="edit-startTime"
@@ -192,7 +198,8 @@ export function EditElectionDialog({
 
                 <div className="space-y-2">
                   <Label htmlFor="edit-endTime">
-                    Hora de Fin (UTC) <span className="text-destructive">*</span>
+                    Hora de Fin (UTC){" "}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="edit-endTime"
@@ -203,26 +210,6 @@ export function EditElectionDialog({
                     disabled={isSubmitting || !isDraft}
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-status">
-                  Estado <span className="text-destructive">*</span>
-                </Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) => handleChange("status", value)}
-                  disabled={isSubmitting}
-                >
-                  <SelectTrigger id="edit-status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Scheduled">Borrador</SelectItem>
-                    <SelectItem value="Active">Activa</SelectItem>
-                    <SelectItem value="Closed">Cerrada</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
 
