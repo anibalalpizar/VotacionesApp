@@ -30,6 +30,11 @@ const data = {
       icon: SquareTerminal,
     },
     {
+      title: "Votar",
+      url: "/dashboard/vote",
+      icon: Vote,
+    },
+    {
       title: "Elecciones",
       url: "#",
       icon: Vote,
