@@ -6,12 +6,14 @@ import type { User } from "@/lib/types"
 interface AuthGuardProps {
   children: React.ReactNode
   requiredRole?: User["role"]
+  requiredRoles?: User["role"][]
   fallbackPath?: string
 }
 
 export async function AuthGuard({
   children,
   requiredRole,
+  requiredRoles,
   fallbackPath = "/login",
 }: AuthGuardProps) {
   const user = await getCurrentUser()
@@ -20,14 +22,10 @@ export async function AuthGuard({
     redirect(fallbackPath)
   }
 
-  if (requiredRole && user.role !== requiredRole) {
-    if (user.role === "ADMIN") {
-      redirect("/dashboard")
-    } else if (user.role === "VOTER") {
-      redirect("/dashboard")
-    } else {
-      redirect("/dashboard")
-    }
+  const rolesToCheck = requiredRoles || (requiredRole ? [requiredRole] : null)
+
+  if (rolesToCheck && !rolesToCheck.includes(user.role)) {
+    redirect("/dashboard")
   }
 
   return <>{children}</>
