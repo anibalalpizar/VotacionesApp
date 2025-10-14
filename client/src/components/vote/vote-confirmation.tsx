@@ -156,7 +156,7 @@ export function VoteConfirmation() {
               "No se encontró el candidato seleccionado. Por favor, regresa y selecciona nuevamente."}
           </AlertDescription>
         </Alert>
-        <Button onClick={() => router.push("/vote")}>
+        <Button onClick={() => router.push("/dashboard/vote")}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Volver a la lista
         </Button>
@@ -240,7 +240,7 @@ export function VoteConfirmation() {
       <div className="mb-8">
         <Button
           variant="ghost"
-          onClick={() => router.push("/vote")}
+          onClick={() => router.push("/dashboard/vote")}
           className="mb-4 -ml-2"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
