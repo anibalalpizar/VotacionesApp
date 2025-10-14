@@ -113,7 +113,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
   const userData = {
     name: user.fullName,
     email: user.email,
-    avatar: "utn.jpg",
+    avatar: "/utn.jpg",
   }
 
   const filteredNavMain = data.navMain
