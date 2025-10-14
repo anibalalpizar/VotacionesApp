@@ -6,6 +6,10 @@ import {
   ChevronsUpDown,
   LogOut,
   Sparkles,
+  Moon,
+  Sun,
+  Monitor,
+  Check,
 } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -17,6 +21,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
   SidebarMenu,
@@ -24,8 +31,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { logoutAction } from "@/lib/actions"
+import { useTheme } from "next-themes"
 
 export function NavUser({
   user,
@@ -37,21 +44,17 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const { theme, setTheme } = useTheme()
 
   const handleLogout = async () => {
     try {
       await logoutAction()
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <div className="flex items-center justify-between gap-2 px-2 py-1.5">
-          <span className="text-sm">Cambiar tema</span>
-          <ThemeToggle />
-        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
@@ -119,6 +122,35 @@ export function NavUser({
                 <Bell />
                 Notificaciones
               </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <div className="flex items-center gap-2">
+                    {theme === "dark" ? (
+                      <Moon className="size-4" />
+                    ) : (
+                      <Sun className="size-4" />
+                    )}
+                    <span>Cambiar tema</span>
+                  </div>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem onClick={() => setTheme("light")}>
+                    <Sun className="size-4" />
+                    Claro
+                    {theme === "light" && <Check className="ml-auto size-4" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("dark")}>
+                    <Moon className="size-4" />
+                    Oscuro
+                    {theme === "dark" && <Check className="ml-auto size-4" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("system")}>
+                    <Monitor className="size-4" />
+                    Sistema
+                    {theme === "system" && <Check className="ml-auto size-4" />}
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
