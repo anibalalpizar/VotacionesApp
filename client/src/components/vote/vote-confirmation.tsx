@@ -80,8 +80,6 @@ export function VoteConfirmation() {
       const { getActiveCandidatesAction } = await import("@/lib/actions")
       const result = await getActiveCandidatesAction()
 
-      console.log("result", result)
-
       if (result.success && result.data) {
         const elections = Array.isArray(result.data)
           ? result.data

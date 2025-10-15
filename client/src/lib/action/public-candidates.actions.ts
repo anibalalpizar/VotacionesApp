@@ -38,8 +38,6 @@ export async function getActiveCandidatesAction() {
       }
     )
 
-    console.log("response!!", response)
-
     if (!response.ok) {
       let errorMessage = "Error al obtener la lista de candidatos."
 
