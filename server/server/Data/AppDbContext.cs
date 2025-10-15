@@ -39,19 +39,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         // Elections
         b.Entity<Election>(e =>
         {
-            e.ToTable("Elections", tb =>
-            {
-                // EF Core 8+: define el check aquí
-                tb.HasCheckConstraint(
-                    "CK_Elections_Dates",
-                    "[StartDate] IS NULL OR [EndDate] IS NULL OR [StartDate] <= [EndDate]");
-            });
-
+            e.ToTable("Elections");
             e.HasKey(x => x.ElectionId);
-            e.Property(x => x.ElectionId).ValueGeneratedOnAdd();
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
-            e.HasIndex(x => x.Name).IsUnique();
+
+            // Fuerza datetimeoffset(0..7). 7 es el máximo (recomendado).
+            e.Property(x => x.StartDate).HasColumnType("datetimeoffset(0)").IsRequired();
+            e.Property(x => x.EndDate).HasColumnType("datetimeoffset(0)").IsRequired();
+
+            // Si mantienes Status en BD:
+           // e.Property(x => x.Status).HasMaxLength(20);
         });
+
 
 
         // Candidates (PK int, FK -> Elections int)

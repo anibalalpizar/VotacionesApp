@@ -13,12 +13,13 @@ namespace Server.Controllers;
 public class ElectionsController : ControllerBase
 {
     private readonly AppDbContext _db;
-    private static TimeZoneInfo _appTz = TimeZoneInfo.Local; // zona por defecto de la app
+    private static TimeZoneInfo _appTz = TimeZoneInfo.Local; // zona de la app (fallback)
 
     public ElectionsController(AppDbContext db, IConfiguration cfg)
     {
         _db = db;
 
+        // Opcional: configura la zona en appsettings.json -> "App:TimeZoneId"
         var tzId = cfg["App:TimeZoneId"];
         if (!string.IsNullOrWhiteSpace(tzId))
         {
@@ -27,58 +28,54 @@ public class ElectionsController : ControllerBase
         }
     }
 
-    // Helpers
+    // ----------------- Helpers (DateTimeOffset) -----------------
 
-    // Lee offset del cliente (en minutos “behind UTC” que entrega JS). 
+    // Lee offset del cliente en minutos (JS getTimezoneOffset), invierte signo.
     private TimeSpan GetClientOffset()
     {
         if (Request.Headers.TryGetValue("X-Client-Offset", out var h) &&
             int.TryParse(h.ToString(), out var minutes))
         {
-            // JS: UTC-6 => getTimezoneOffset() = 360 -> invertimos signo para obtener +/-
+            // JS da minutos "behind UTC" (ej. 360 en UTC-6) → invertimos signo
             return TimeSpan.FromMinutes(-minutes);
         }
-        //zona configurada de la app
+        // Si no llega header, usamos la zona configurada de la app
         return _appTz.GetUtcOffset(DateTime.UtcNow);
     }
 
-    // Normaliza SIEMPRE a UTC lo que venga en el DTO (DateTimeOffset).
-    // - Si trae offset/Z correcto, se respeta.
-    // - Si viene “plano” (offset 0 pero el usuario digitó hora local), reconstruimos con offset del cliente.
-    private DateTime NormalizeFromClient(DateTimeOffset dtoValue)
+    // Normaliza lo que llega del cliente:
+    // - Si trae offset real (!= 00:00), lo conservamos TAL CUAL (no lo pasamos a UTC).
+    // - Si viene "plano" (offset == 00:00 pero la hora era local), reconstruimos con offset del cliente.
+    private DateTimeOffset NormalizeFromClient(DateTimeOffset incoming)
     {
-        if (dtoValue.Offset != TimeSpan.Zero)
-            return dtoValue.UtcDateTime; // ya tiene offset real
+        if (incoming.Offset != TimeSpan.Zero)
+            return incoming; // conservar tal cual (con su offset)
 
-        var clientOffset = GetClientOffset();
-        var localClock = dtoValue.DateTime;               // hora digitada (sin offset real)
-        var rebuilt = new DateTimeOffset(localClock, clientOffset);
-        return rebuilt.UtcDateTime;                        // guarda UTC
+        // reconstruir usando el offset del cliente y conservar ese offset
+        var rebuilt = new DateTimeOffset(incoming.DateTime, GetClientOffset());
+        return rebuilt;
     }
 
-    private static DateTime AsUtc(DateTime dt) =>
-        dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
-
-    private static string? ValidateDates(DateTime startUtc, DateTime endUtc)
-    {
-        var s = AsUtc(startUtc);
-        var e = AsUtc(endUtc);
-        if (s >= e) return "La fecha de inicio debe ser menor a la fecha de fin.";
-        return null;
-    }
-
-    // Calcula estado “en vivo” con base en ahora (UTC) y el rango.
-    private static (string Status, bool IsActive) RuntimeStatus(DateTime? start, DateTime? end)
+    // Estado calculado en vivo comparando en UTC
+    private static (string Status, bool IsActive) RuntimeStatus(DateTimeOffset? start, DateTimeOffset? end)
     {
         if (start is null || end is null) return ("Scheduled", false);
 
-        var s = AsUtc(start.Value);
-        var e = AsUtc(end.Value);
-        var now = DateTime.UtcNow;
+        var nowUtc = DateTimeOffset.UtcNow;
+        var sUtc = start.Value.ToUniversalTime();
+        var eUtc = end.Value.ToUniversalTime();
 
-        if (now < s) return ("Scheduled", false);
-        if (now > e) return ("Closed", false);
+        if (nowUtc < sUtc) return ("Scheduled", false);
+        if (nowUtc > eUtc) return ("Closed", false);
         return ("Active", true);
+    }
+
+    private static string? ValidateDates(DateTimeOffset start, DateTimeOffset end)
+    {
+        // Validar en UTC para evitar ambigüedades
+        if (start.ToUniversalTime() >= end.ToUniversalTime())
+            return "La fecha de inicio debe ser menor a la fecha de fin.";
+        return null;
     }
 
     private static ElectionDto ToDto(Election e, int candidateCount, int voteCount)
@@ -89,18 +86,19 @@ public class ElectionsController : ControllerBase
         {
             ElectionId = e.ElectionId,
             Name = e.Name,
-            StartDateUtc = e.StartDate is null ? DateTime.MinValue : AsUtc(e.StartDate.Value),
-            EndDateUtc = e.EndDate is null ? DateTime.MinValue : AsUtc(e.EndDate.Value),
-            Status = status,          // calculado dinámicamente
-            IsActive = isActive,        // calculado dinámicamente
+            // Devolvemos EXACTAMENTE lo guardado (con offset)
+            StartDateUtc = e.StartDate ?? default,
+            EndDateUtc = e.EndDate ?? default,
+            Status = status,            // calculado dinámicamente
             CandidateCount = candidateCount,
-            VoteCount = voteCount
+            VoteCount = voteCount,
+            IsActive = isActive
         };
     }
 
-    //Endpoints 
+    // ----------------- Endpoints -----------------
 
-    // POST: /api/elections (crear)
+    // POST: /api/elections
     [HttpPost]
     [ProducesResponseType(typeof(ElectionDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -113,23 +111,23 @@ public class ElectionsController : ControllerBase
         if (string.IsNullOrWhiteSpace(name))
             return BadRequest(new { message = "El nombre de la elección es requerido." });
 
-        // Normalizar SIEMPRE a UTC (tolera horas locales si vienen sin offset real)
-        var sUtc = NormalizeFromClient(dto.StartDateUtc);
-        var eUtc = NormalizeFromClient(dto.EndDateUtc);
+        // Normaliza desde el cliente conservando offset
+        var sClient = NormalizeFromClient(dto.StartDateUtc);
+        var eClient = NormalizeFromClient(dto.EndDateUtc);
 
-        var dateError = ValidateDates(sUtc, eUtc);
-        if (dateError is not null)
-            return BadRequest(new { message = dateError });
+        var dateError = ValidateDates(sClient, eClient);
+        if (dateError is not null) return BadRequest(new { message = dateError });
 
         // Nombre único
-        var dup = await _db.Elections.AnyAsync(e => e.Name == name, ct);
-        if (dup) return Conflict(new { message = "Ya existe una elección con ese nombre." });
+        var exists = await _db.Elections.AnyAsync(e => e.Name == name, ct);
+        if (exists) return Conflict(new { message = "Ya existe una elección con ese nombre." });
 
         var entity = new Election
         {
             Name = name,
-            StartDate = sUtc,
-            EndDate = eUtc
+            StartDate = sClient, // guardamos con offset
+            EndDate = eClient  // guardamos con offset
+            // SIN columna Status en BD
         };
 
         _db.Elections.Add(entity);
@@ -138,13 +136,12 @@ public class ElectionsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = entity.ElectionId }, ToDto(entity, 0, 0));
     }
 
-    // GET: /api/elections (listar)
+    // GET: /api/elections (paginado)
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
-        CancellationToken ct = default)
+    public async Task<IActionResult> GetAll([FromQuery] int page = 1,
+                                            [FromQuery] int pageSize = 20,
+                                            CancellationToken ct = default)
     {
         page = page < 1 ? 1 : page;
         pageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
@@ -153,25 +150,25 @@ public class ElectionsController : ControllerBase
 
         var total = await baseQuery.CountAsync(ct);
 
-        var rows = await (from e in baseQuery
-                          join c in _db.Candidates on e.ElectionId equals c.ElectionId into gc
-                          from c in gc.DefaultIfEmpty()
-                          join v in _db.Votes on e.ElectionId equals v.ElectionId into gv
-                          from v in gv.DefaultIfEmpty()
-                          group new { e, c, v } by e into g
-                          select new
-                          {
-                              Election = g.Key,
-                              C = g.Count(x => x.c != null),
-                              V = g.Count(x => x.v != null)
-                          })
-                         .Skip((page - 1) * pageSize)
-                         .Take(pageSize)
-                         .ToListAsync(ct);
+        var items = await (from e in baseQuery
+                           join c in _db.Candidates on e.ElectionId equals c.ElectionId into gc
+                           from c in gc.DefaultIfEmpty()
+                           join v in _db.Votes on e.ElectionId equals v.ElectionId into gv
+                           from v in gv.DefaultIfEmpty()
+                           group new { e, c, v } by e into g
+                           select new
+                           {
+                               Election = g.Key,
+                               CandidateCount = g.Count(x => x.c != null),
+                               VoteCount = g.Count(x => x.v != null)
+                           })
+                          .Skip((page - 1) * pageSize)
+                          .Take(pageSize)
+                          .ToListAsync(ct);
 
-        var items = rows.Select(x => ToDto(x.Election, x.C, x.V)).ToList();
+        var dtoItems = items.Select(x => ToDto(x.Election, x.CandidateCount, x.VoteCount)).ToList();
 
-        return Ok(new { page, pageSize, total, items });
+        return Ok(new { page, pageSize, total, items = dtoItems });
     }
 
     // GET: /api/elections/{id}
@@ -184,13 +181,15 @@ public class ElectionsController : ControllerBase
                                    .FirstOrDefaultAsync(x => x.ElectionId == id, ct);
         if (e is null) return NotFound();
 
-        var c = await _db.Candidates.CountAsync(x => x.ElectionId == id, ct);
-        var v = await _db.Votes.CountAsync(x => x.ElectionId == id, ct);
+        var candidateCount = await _db.Candidates.CountAsync(c => c.ElectionId == id, ct);
+        var voteCount = await _db.Votes.CountAsync(v => v.ElectionId == id, ct);
 
-        return Ok(ToDto(e, c, v));
+        return Ok(ToDto(e, candidateCount, voteCount));
     }
 
-    // PUT: /api/elections/{id} (actualizar)
+    // PUT: /api/elections/{id}
+    // Regla ejemplo: permitir cambiar fechas siempre (si no tienes restricción de estado en BD),
+    // validando rango y nombre único.
     [HttpPut("{id:int}")]
     [ProducesResponseType(typeof(ElectionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -205,28 +204,25 @@ public class ElectionsController : ControllerBase
         if (string.IsNullOrWhiteSpace(name))
             return BadRequest(new { message = "El nombre de la elección es requerido." });
 
-        // Nombre único (excluyendo la misma)
         var dup = await _db.Elections.AnyAsync(x => x.ElectionId != id && x.Name == name, ct);
         if (dup) return Conflict(new { message = "Ya existe otra elección con ese nombre." });
 
-        // Normalizar a UTC desde el cliente (misma lógica que en Create)
-        var sUtc = NormalizeFromClient(dto.StartDateUtc);
-        var eUtc = NormalizeFromClient(dto.EndDateUtc);
+        var sClient = NormalizeFromClient(dto.StartDateUtc);
+        var eClient = NormalizeFromClient(dto.EndDateUtc);
 
-        var dateError = ValidateDates(sUtc, eUtc);
-        if (dateError is not null)
-            return BadRequest(new { message = dateError });
+        var dateError = ValidateDates(sClient, eClient);
+        if (dateError is not null) return BadRequest(new { message = dateError });
 
         e.Name = name;
-        e.StartDate = sUtc;
-        e.EndDate = eUtc;
+        e.StartDate = sClient; // conservar offset
+        e.EndDate = eClient; // conservar offset
 
         await _db.SaveChangesAsync(ct);
 
-        var c = await _db.Candidates.CountAsync(x => x.ElectionId == id, ct);
-        var v = await _db.Votes.CountAsync(x => x.ElectionId == id, ct);
+        var candidateCount = await _db.Candidates.CountAsync(c => c.ElectionId == id, ct);
+        var voteCount = await _db.Votes.CountAsync(v => v.ElectionId == id, ct);
 
-        return Ok(ToDto(e, c, v));
+        return Ok(ToDto(e, candidateCount, voteCount));
     }
 
     // DELETE: /api/elections/{id}
