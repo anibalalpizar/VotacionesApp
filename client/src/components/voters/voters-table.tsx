@@ -52,6 +52,7 @@ import { getAllVotersAction, getVoterByIdAction } from "@/lib/actions"
 import { ViewVoterDialog } from "@/components/voters/view-voter-dialog"
 import { EditVoterDialog } from "@/components/voters/edit-voter-dialog"
 import { DeleteVoterDialog } from "@/components/voters/delete-voter-dialog"
+import { VotersTableSkeleton } from "./voters-table-skeleton"
 
 declare module "@tanstack/react-table" {
   interface ColumnMeta<TData, TValue> {
@@ -403,11 +404,7 @@ export function VotersTable() {
   const totalPages = Math.ceil(pagination.total / pagination.pageSize)
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
+    return <VotersTableSkeleton />
   }
 
   return (

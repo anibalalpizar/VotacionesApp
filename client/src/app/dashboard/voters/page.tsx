@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import { AuthGuard } from "@/components/auth-guard"
 import { VotersTable } from "@/components/voters/voters-table"
+import { VotersTableSkeleton } from "@/components/voters/voters-table-skeleton"
 
 export default function VotersListPage() {
   return (
@@ -15,13 +16,7 @@ export default function VotersListPage() {
           </p>
         </div>
 
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-            </div>
-          }
-        >
+        <Suspense fallback={<VotersTableSkeleton />}>
           <VotersTable />
         </Suspense>
       </div>
