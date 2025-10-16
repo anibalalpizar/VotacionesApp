@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import { AuthGuard } from "@/components/auth-guard"
 import { ElectionsTable } from "@/components/elections/elections-table"
+import { ElectionsTableSkeleton } from "@/components/elections/elections-table-skeleton"
 
 export default function ElectionsListPage() {
   return (
@@ -15,13 +16,7 @@ export default function ElectionsListPage() {
           </p>
         </div>
 
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-            </div>
-          }
-        >
+        <Suspense fallback={<ElectionsTableSkeleton />}>
           <ElectionsTable />
         </Suspense>
       </div>

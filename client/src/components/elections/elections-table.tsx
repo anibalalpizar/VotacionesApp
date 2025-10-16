@@ -52,6 +52,7 @@ import { getAllElectionsAction, getElectionByIdAction } from "@/lib/actions"
 import { ViewElectionDialog } from "@/components/elections/view-election-dialog"
 import { EditElectionDialog } from "@/components/elections/edit-election-dialog"
 import { DeleteElectionDialog } from "@/components/elections/delete-election-dialog"
+import { ElectionsTableSkeleton } from "./elections-table-skeleton"
 
 declare module "@tanstack/react-table" {
   interface ColumnMeta<TData, TValue> {
@@ -437,11 +438,7 @@ export function ElectionsTable() {
   const totalPages = Math.ceil(pagination.total / pagination.pageSize)
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
+    return <ElectionsTableSkeleton />
   }
 
   return (
