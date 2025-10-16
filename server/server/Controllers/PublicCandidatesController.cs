@@ -24,14 +24,14 @@ public class PublicCandidatesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetActiveElectionsWithCandidates(CancellationToken ct)
     {
-        var now = DateTime.UtcNow;
+        var now = DateTimeOffset.UtcNow;
 
         var elections = await _db.Elections
             .AsNoTracking()
             .Where(e =>
                 e.StartDate != null && e.EndDate != null &&
-                e.StartDate!.Value.UtcDateTime <= now &&
-                now <= e.EndDate!.Value.UtcDateTime)
+                e.StartDate!.Value <= now &&
+                now <= e.EndDate!.Value)
             .OrderBy(e => e.StartDate)
             .Select(e => new { e.ElectionId, e.Name })
             .ToListAsync(ct);
