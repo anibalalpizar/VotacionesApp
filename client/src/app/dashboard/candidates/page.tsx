@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import { AuthGuard } from "@/components/auth-guard"
 import { CandidatesTable } from "@/components/candidates/candidates-table"
+import { CandidatesTableSkeleton } from "@/components/candidates/candidates-table-skeleton"
 
 export default function CandidatesListPage() {
   return (
@@ -14,13 +15,7 @@ export default function CandidatesListPage() {
             Gestione todos los candidatos registrados en el sistema
           </p>
         </div>
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-            </div>
-          }
-        >
+        <Suspense fallback={<CandidatesTableSkeleton />}>
           <CandidatesTable />
         </Suspense>
       </div>

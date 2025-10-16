@@ -49,6 +49,7 @@ import { getAllCandidatesAction, getCandidateByIdAction } from "@/lib/actions"
 import { ViewCandidateDialog } from "@/components/candidates/view-candidate-dialog"
 import { EditCandidateDialog } from "@/components/candidates/edit-candidate-dialog"
 import { DeleteCandidateDialog } from "@/components/candidates/delete-candidate-dialog"
+import { CandidatesTableSkeleton } from "./candidates-table-skeleton"
 
 type Candidate = {
   candidateId: number
@@ -362,11 +363,7 @@ export function CandidatesTable() {
   const totalPages = Math.ceil(pagination.total / pagination.pageSize)
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
+    return <CandidatesTableSkeleton />
   }
 
   return (
