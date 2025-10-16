@@ -370,3 +370,4 @@ server/server/obj/Debug/*
 /server/.vs/server/v17/*
 /server/server/obj/*
 /server/server/obj/Debug/net8.0/apphost.exe
+**/Migrations/
