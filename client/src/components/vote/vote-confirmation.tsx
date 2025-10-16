@@ -23,6 +23,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { VoteConfirmationSkeleton } from "./vote-confirmation-skeleton"
 
 // Types
 interface Candidate {
@@ -131,16 +132,7 @@ export function VoteConfirmation() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-12 max-w-2xl">
-        <div className="flex flex-col items-center justify-center py-12">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <p className="text-muted-foreground">
-            Cargando información del candidato...
-          </p>
-        </div>
-      </div>
-    )
+    return <VoteConfirmationSkeleton />
   }
 
   // Error state

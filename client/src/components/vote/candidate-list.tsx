@@ -17,6 +17,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { getActiveCandidatesAction } from "@/lib/actions"
+import {
+  CandidateListSkeleton,
+  ElectionSelectionSkeleton,
+} from "./candidate-list-skeleton"
 
 interface Candidate {
   candidateId: number
@@ -53,6 +57,7 @@ export function CandidateList() {
   const [electionData, setElectionData] = useState<ElectionData | null>(null)
   const [allElections, setAllElections] = useState<ElectionData[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [hasMultipleElections, setHasMultipleElections] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showElectionDialog, setShowElectionDialog] = useState(false)
   const router = useRouter()
@@ -75,8 +80,10 @@ export function CandidateList() {
 
         if (elections.length === 1) {
           setElectionData(elections[0])
+          setHasMultipleElections(false)
         } else if (elections.length > 1) {
           setShowElectionDialog(true)
+          setHasMultipleElections(true)
         } else {
           setError("No hay elecciones activas en este momento.")
         }
@@ -113,14 +120,7 @@ export function CandidateList() {
   }
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-12 max-w-7xl">
-        <div className="flex flex-col items-center justify-center py-12">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <p className="text-muted-foreground">Cargando elecciones...</p>
-        </div>
-      </div>
-    )
+    return <CandidateListSkeleton showElectionDialog={hasMultipleElections} />
   }
 
   if (error) {
