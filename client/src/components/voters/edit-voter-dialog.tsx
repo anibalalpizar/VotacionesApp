@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { updateVoterAction } from "@/lib/actions"
+import EditVoterDialogSkeleton from "./edit-voter-dialog-skeleton"
 
 interface EditVoterDialogProps {
   voter: {
@@ -43,6 +44,7 @@ export function EditVoterDialog({
   onSuccess,
 }: EditVoterDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     identification: "",
     fullName: "",
@@ -52,12 +54,17 @@ export function EditVoterDialog({
 
   useEffect(() => {
     if (voter && open) {
-      setFormData({
-        identification: voter.identification,
-        fullName: voter.fullName,
-        email: voter.email,
-        role: voter.role,
-      })
+      setIsLoading(true)
+
+      setTimeout(() => {
+        setFormData({
+          identification: voter.identification,
+          fullName: voter.fullName,
+          email: voter.email,
+          role: voter.role,
+        })
+        setIsLoading(false)
+      }, 300)
     }
   }, [voter, open])
 
@@ -101,7 +108,9 @@ export function EditVoterDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {voter ? (
+        {isLoading ? (
+          <EditVoterDialogSkeleton />
+        ) : voter ? (
           <form onSubmit={handleSubmit}>
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
