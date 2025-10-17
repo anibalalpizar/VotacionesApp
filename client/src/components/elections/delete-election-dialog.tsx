@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Loader2, AlertTriangle, CalendarCheck, Hash } from "lucide-react"
 import { deleteElectionAction } from "@/lib/actions"
+import DeleteElectionDialogSkeleton from "./delete-election-dialog-skeleton"
 
 interface DeleteElectionDialogProps {
   election: {
@@ -33,13 +34,27 @@ export function DeleteElectionDialog({
   onSuccess,
 }: DeleteElectionDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [electionData, setElectionData] = useState<typeof election>(null)
+
+  useEffect(() => {
+    if (open && election) {
+      setIsLoading(true)
+      setElectionData(null)
+
+      setTimeout(() => {
+        setElectionData(election)
+        setIsLoading(false)
+      }, 300)
+    }
+  }, [open, election])
 
   const handleDelete = async () => {
-    if (!election) return
+    if (!electionData) return
 
     setIsDeleting(true)
     try {
-      const result = await deleteElectionAction(election.electionId)
+      const result = await deleteElectionAction(electionData.electionId)
 
       if (result.success) {
         toast.success(result.message || "Elección eliminada exitosamente")
@@ -72,7 +87,9 @@ export function DeleteElectionDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        {election && (
+        {isLoading ? (
+          <DeleteElectionDialogSkeleton />
+        ) : electionData ? (
           <>
             <div className="space-y-3 rounded-lg border bg-muted/50 p-4">
               <div className="flex items-start gap-3">
@@ -82,7 +99,7 @@ export function DeleteElectionDialog({
                     Nombre de la Elección
                   </span>
                   <div className="font-semibold text-foreground">
-                    {election.name}
+                    {electionData.name}
                   </div>
                 </div>
               </div>
@@ -94,8 +111,8 @@ export function DeleteElectionDialog({
                     Estadísticas
                   </span>
                   <div className="font-semibold text-foreground">
-                    {election.candidateCount} candidatos • {election.voteCount}{" "}
-                    votos
+                    {electionData.candidateCount} candidatos •{" "}
+                    {electionData.voteCount} votos
                   </div>
                 </div>
               </div>
@@ -108,35 +125,35 @@ export function DeleteElectionDialog({
                 asociados.
               </span>
             </div>
-          </>
-        )}
 
-        <AlertDialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isDeleting}
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            {isDeleting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Eliminando...
-              </>
-            ) : (
-              <>
-                <AlertTriangle className="mr-2 h-4 w-4" />
-                Eliminar
-              </>
-            )}
-          </Button>
-        </AlertDialogFooter>
+            <AlertDialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isDeleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Eliminando...
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="mr-2 h-4 w-4" />
+                    Eliminar
+                  </>
+                )}
+              </Button>
+            </AlertDialogFooter>
+          </>
+        ) : null}
       </AlertDialogContent>
     </AlertDialog>
   )
