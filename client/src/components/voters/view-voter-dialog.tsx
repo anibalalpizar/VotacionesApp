@@ -12,10 +12,11 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, UserCircle, X } from "lucide-react"
+import { UserCircle, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { getVoterByIdAction } from "@/lib/actions"
 import { cn } from "@/lib/utils"
+import ViewVoterDialogSkeleton from "./view-voter-dialog-skeleton"
 
 interface ViewVoterDialogProps {
   voterId: number | null
@@ -36,6 +37,7 @@ export function ViewVoterDialog({
     role: string
     createdAt: string
   } | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (open && voterId) {
@@ -46,8 +48,14 @@ export function ViewVoterDialog({
   async function loadVoterDetails() {
     if (!voterId) return
 
+    setIsLoading(true)
+    setVoter(null)
+
     try {
-      const result = await getVoterByIdAction(voterId)
+      const [result] = await Promise.all([
+        getVoterByIdAction(voterId),
+        new Promise((resolve) => setTimeout(resolve, 300)),
+      ])
 
       if (result.success && result.data) {
         setVoter(result.data)
@@ -58,6 +66,8 @@ export function ViewVoterDialog({
     } catch (error) {
       toast.error("Error de conexión al cargar detalles")
       onOpenChange(false)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -81,7 +91,9 @@ export function ViewVoterDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {voter ? (
+        {isLoading ? (
+          <ViewVoterDialogSkeleton />
+        ) : voter ? (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
