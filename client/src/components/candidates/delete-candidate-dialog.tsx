@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Loader2, AlertTriangle, UserX, Hash } from "lucide-react"
 import { deleteCandidateAction } from "@/lib/actions"
+import DeleteCandidateDialogSkeleton from "./delete-candidate-dialog-skeleton"
 
 interface DeleteCandidateDialogProps {
   candidate: {
@@ -33,13 +34,27 @@ export function DeleteCandidateDialog({
   onSuccess,
 }: DeleteCandidateDialogProps) {
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [candidateData, setCandidateData] = useState<typeof candidate>(null)
+
+  useEffect(() => {
+    if (open && candidate) {
+      setIsLoading(true)
+      setCandidateData(null)
+
+      setTimeout(() => {
+        setCandidateData(candidate)
+        setIsLoading(false)
+      }, 300)
+    }
+  }, [open, candidate])
 
   const handleDelete = async () => {
-    if (!candidate) return
+    if (!candidateData) return
 
     setIsDeleting(true)
     try {
-      const result = await deleteCandidateAction(candidate.candidateId)
+      const result = await deleteCandidateAction(candidateData.candidateId)
 
       if (result.success) {
         toast.success(result.message || "Candidato eliminado exitosamente")
@@ -72,7 +87,9 @@ export function DeleteCandidateDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        {candidate && (
+        {isLoading ? (
+          <DeleteCandidateDialogSkeleton />
+        ) : candidateData ? (
           <>
             <div className="space-y-3 rounded-lg border bg-muted/50 p-4">
               <div className="flex items-start gap-3">
@@ -82,7 +99,7 @@ export function DeleteCandidateDialog({
                     Nombre del Candidato
                   </span>
                   <div className="font-semibold text-foreground">
-                    {candidate.name}
+                    {candidateData.name}
                   </div>
                 </div>
               </div>
@@ -94,7 +111,7 @@ export function DeleteCandidateDialog({
                     Partido/Agrupación
                   </span>
                   <div className="font-semibold text-foreground">
-                    {candidate.party}
+                    {candidateData.party}
                   </div>
                 </div>
               </div>
@@ -106,35 +123,35 @@ export function DeleteCandidateDialog({
                 permanentemente del sistema.
               </span>
             </div>
-          </>
-        )}
 
-        <AlertDialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isDeleting}
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            {isDeleting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Eliminando...
-              </>
-            ) : (
-              <>
-                <AlertTriangle className="mr-2 h-4 w-4" />
-                Eliminar
-              </>
-            )}
-          </Button>
-        </AlertDialogFooter>
+            <AlertDialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isDeleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Eliminando...
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="mr-2 h-4 w-4" />
+                    Eliminar
+                  </>
+                )}
+              </Button>
+            </AlertDialogFooter>
+          </>
+        ) : null}
       </AlertDialogContent>
     </AlertDialog>
   )
