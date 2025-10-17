@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { updateCandidateAction, getAllElectionsAction } from "@/lib/actions"
+import EditCandidateDialogSkeleton from "./edit-candidate-dialog-skeleton"
 
 interface EditCandidateDialogProps {
   candidate: {
@@ -50,6 +51,7 @@ export function EditCandidateDialog({
   onSuccess,
 }: EditCandidateDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [isLoadingElections, setIsLoadingElections] = useState(false)
   const [openCombobox, setOpenCombobox] = useState(false)
   const [selectedElectionId, setSelectedElectionId] = useState<number | null>(
@@ -64,7 +66,7 @@ export function EditCandidateDialog({
     party: "",
   })
 
-  // 🟩 Cargar elecciones al abrir el modal
+  // Cargar elecciones al abrir el modal
   useEffect(() => {
     if (!open) return
     const loadElections = async () => {
@@ -86,22 +88,24 @@ export function EditCandidateDialog({
     loadElections()
   }, [open])
 
-  // 🟨 Cuando haya candidato y elecciones disponibles
+  // Cuando haya candidato y elecciones disponibles
   useEffect(() => {
     if (!candidate) return
 
-    setFormData({
-      name: candidate.name || "",
-      party: candidate.party || "",
-    })
+    setIsLoading(true)
 
-    if (elections.length > 0) {
-      setSelectedElectionId(candidate.electionId ?? null)
-    }
+    setTimeout(() => {
+      setFormData({
+        name: candidate.name || "",
+        party: candidate.party || "",
+      })
+
+      if (elections.length > 0) {
+        setSelectedElectionId(candidate.electionId ?? null)
+      }
+      setIsLoading(false)
+    }, 300)
   }, [candidate, elections])
-
-  // 🧪 Ver cambios de selectedElectionId
-  useEffect(() => {}, [selectedElectionId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -151,7 +155,9 @@ export function EditCandidateDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {candidate && (
+        {isLoading ? (
+          <EditCandidateDialogSkeleton />
+        ) : candidate ? (
           <form onSubmit={handleSubmit}>
             <div className="space-y-6">
               <div className="space-y-2">
@@ -280,7 +286,7 @@ export function EditCandidateDialog({
               </Button>
             </DialogFooter>
           </form>
-        )}
+        ) : null}
       </DialogContent>
     </Dialog>
   )
