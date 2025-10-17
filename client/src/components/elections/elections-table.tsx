@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useId, useMemo } from "react"
 import { toast } from "sonner"
-import { Search, Loader2, Eye, Pencil, Trash2, Plus } from "lucide-react"
+import { Search, Eye, Pencil, Trash2, Plus } from "lucide-react"
 
 import type {
   Column,
@@ -48,7 +48,7 @@ import {
 } from "@/components/ui/tooltip"
 
 import { cn } from "@/lib/utils"
-import { getAllElectionsAction, getElectionByIdAction } from "@/lib/actions"
+import { getAllElectionsAction } from "@/lib/actions"
 import { ViewElectionDialog } from "@/components/elections/view-election-dialog"
 import { EditElectionDialog } from "@/components/elections/edit-election-dialog"
 import { DeleteElectionDialog } from "@/components/elections/delete-election-dialog"
@@ -143,7 +143,6 @@ function Filter({ column }: { column: Column<any, unknown> }) {
 export function ElectionsTable() {
   const [elections, setElections] = useState<Election[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isLoadingElection, setIsLoadingElection] = useState(false)
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [sorting, setSorting] = useState<SortingState>([
     {
@@ -274,43 +273,20 @@ export function ElectionsTable() {
           const election = row.original
 
           return (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
-                      disabled={isLoadingElection}
-                      onClick={async () => {
-                        setIsLoadingElection(true)
-                        try {
-                          const result = await getElectionByIdAction(
-                            election.electionId
-                          )
-
-                          if (result.success && result.data) {
-                            setSelectedElectionId(election.electionId)
-                            setViewDialogOpen(true)
-                          } else {
-                            toast.error(
-                              result.message ||
-                                "Error al cargar detalles de la elección"
-                            )
-                          }
-                        } catch (error) {
-                          toast.error("Error de conexión al cargar detalles")
-                        } finally {
-                          setIsLoadingElection(false)
-                        }
+                      className="h-8 w-8 text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50 dark:text-cyan-400 dark:hover:text-cyan-300 dark:hover:bg-cyan-950/30 transition-colors"
+                      onClick={() => {
+                        setSelectedElectionId(election.electionId)
+                        setViewDialogOpen(true)
                       }}
                     >
-                      {isLoadingElection ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      <Eye className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -325,29 +301,10 @@ export function ElectionsTable() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
-                      disabled={isLoadingElection}
-                      onClick={async () => {
-                        setIsLoadingElection(true)
-                        try {
-                          const result = await getElectionByIdAction(
-                            election.electionId
-                          )
-
-                          if (result.success && result.data) {
-                            setSelectedElectionForEdit(result.data)
-                            setEditDialogOpen(true)
-                          } else {
-                            toast.error(
-                              result.message ||
-                                "Error al cargar datos de la elección"
-                            )
-                          }
-                        } catch (error) {
-                          toast.error("Error de conexión al cargar datos")
-                        } finally {
-                          setIsLoadingElection(false)
-                        }
+                      className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:text-amber-300 dark:hover:bg-amber-950/30 transition-colors"
+                      onClick={() => {
+                        setSelectedElectionForEdit(election)
+                        setEditDialogOpen(true)
                       }}
                     >
                       <Pencil className="h-4 w-4" />
@@ -365,7 +322,7 @@ export function ElectionsTable() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30 transition-colors"
                       onClick={() => {
                         setSelectedElectionForDelete(election)
                         setDeleteDialogOpen(true)
@@ -385,7 +342,7 @@ export function ElectionsTable() {
         enableSorting: false,
       },
     ],
-    [isLoadingElection]
+    []
   )
 
   useEffect(() => {
