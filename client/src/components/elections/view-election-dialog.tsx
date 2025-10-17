@@ -16,6 +16,7 @@ import { CalendarCheck, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { getElectionByIdAction } from "@/lib/actions"
 import { cn } from "@/lib/utils"
+import ViewElectionDialogSkeleton from "./view-election-dialog-skeleton"
 
 interface ViewElectionDialogProps {
   electionId: string | null
@@ -37,6 +38,7 @@ export function ViewElectionDialog({
     candidateCount: number
     voteCount: number
   } | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (open && electionId) {
@@ -47,8 +49,14 @@ export function ViewElectionDialog({
   async function loadElectionDetails() {
     if (!electionId) return
 
+    setIsLoading(true)
+    setElection(null)
+
     try {
-      const result = await getElectionByIdAction(electionId)
+      const [result] = await Promise.all([
+        getElectionByIdAction(electionId),
+        new Promise((resolve) => setTimeout(resolve, 300)),
+      ])
 
       if (result.success && result.data) {
         setElection(result.data)
@@ -59,6 +67,8 @@ export function ViewElectionDialog({
     } catch (error) {
       toast.error("Error de conexión al cargar detalles")
       onOpenChange(false)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -91,7 +101,9 @@ export function ViewElectionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {election ? (
+        {isLoading ? (
+          <ViewElectionDialogSkeleton />
+        ) : election ? (
           <div className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="view-name">Nombre de la Elección</Label>
