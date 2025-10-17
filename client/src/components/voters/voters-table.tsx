@@ -244,41 +244,21 @@ export function VotersTable() {
           const voter = row.original
 
           return (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-8 w-8 text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50 dark:text-cyan-400 dark:hover:text-cyan-300 dark:hover:bg-cyan-950/30 transition-colors"
                       disabled={isLoadingVoter}
-                      onClick={async () => {
-                        setIsLoadingVoter(true)
-                        try {
-                          const result = await getVoterByIdAction(voter.userId)
-
-                          if (result.success && result.data) {
-                            setSelectedVoterId(voter.userId)
-                            setViewDialogOpen(true)
-                          } else {
-                            toast.error(
-                              result.message ||
-                                "Error al cargar detalles del votante"
-                            )
-                          }
-                        } catch (error) {
-                          toast.error("Error de conexión al cargar detalles")
-                        } finally {
-                          setIsLoadingVoter(false)
-                        }
+                      onClick={() => {
+                        setSelectedVoterId(voter.userId)
+                        setViewDialogOpen(true)
                       }}
                     >
-                      {isLoadingVoter ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      <Eye className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -293,7 +273,7 @@ export function VotersTable() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:text-amber-300 dark:hover:bg-amber-950/30 transition-colors"
                       disabled={isLoadingVoter}
                       onClick={async () => {
                         setIsLoadingVoter(true)
@@ -331,7 +311,7 @@ export function VotersTable() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30 transition-colors"
                       onClick={() => {
                         setSelectedVoterForDelete(voter)
                         setDeleteDialogOpen(true)
