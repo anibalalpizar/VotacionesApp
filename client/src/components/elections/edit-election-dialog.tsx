@@ -14,15 +14,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, Pencil, Save, X, AlertCircle } from "lucide-react"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { updateElectionAction } from "@/lib/actions"
+import EditElectionDialogSkeleton from "./edit-election-dialog-skeleton"
 
 interface EditElectionDialogProps {
   election: {
@@ -44,6 +38,7 @@ export function EditElectionDialog({
   onSuccess,
 }: EditElectionDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     startDate: "",
@@ -55,17 +50,22 @@ export function EditElectionDialog({
 
   useEffect(() => {
     if (election && open) {
-      const startDate = new Date(election.startDateUtc)
-      const endDate = new Date(election.endDateUtc)
+      setIsLoading(true)
 
-      setFormData({
-        name: election.name,
-        startDate: startDate.toISOString().split("T")[0],
-        startTime: startDate.toTimeString().slice(0, 5),
-        endDate: endDate.toISOString().split("T")[0],
-        endTime: endDate.toTimeString().slice(0, 5),
-        status: election.status,
-      })
+      setTimeout(() => {
+        const startDate = new Date(election.startDateUtc)
+        const endDate = new Date(election.endDateUtc)
+
+        setFormData({
+          name: election.name,
+          startDate: startDate.toISOString().split("T")[0],
+          startTime: startDate.toTimeString().slice(0, 5),
+          endDate: endDate.toISOString().split("T")[0],
+          endTime: endDate.toTimeString().slice(0, 5),
+          status: election.status,
+        })
+        setIsLoading(false)
+      }, 300)
     }
   }, [election, open])
 
@@ -122,7 +122,9 @@ export function EditElectionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {election ? (
+        {isLoading ? (
+          <EditElectionDialogSkeleton />
+        ) : election ? (
           <form onSubmit={handleSubmit}>
             <div className="space-y-6">
               {!isDraft && (
