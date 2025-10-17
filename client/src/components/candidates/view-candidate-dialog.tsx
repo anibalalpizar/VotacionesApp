@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { UserCheck, X } from "lucide-react"
 import { getCandidateByIdAction } from "@/lib/actions"
+import ViewCandidateDialogSkeleton from "./view-candidate-dialog-skeleton"
 
 interface ViewCandidateDialogProps {
   candidateId: number | null
@@ -32,6 +33,7 @@ export function ViewCandidateDialog({
     name: string
     party: string
   } | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (open && candidateId) {
@@ -42,8 +44,14 @@ export function ViewCandidateDialog({
   async function loadCandidateDetails() {
     if (!candidateId) return
 
+    setIsLoading(true)
+    setCandidate(null)
+
     try {
-      const result = await getCandidateByIdAction(candidateId)
+      const [result] = await Promise.all([
+        getCandidateByIdAction(candidateId),
+        new Promise((resolve) => setTimeout(resolve, 300)),
+      ])
 
       if (result.success && result.data) {
         setCandidate(result.data)
@@ -54,6 +62,8 @@ export function ViewCandidateDialog({
     } catch (error) {
       toast.error("Error de conexión al cargar detalles")
       onOpenChange(false)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -70,7 +80,9 @@ export function ViewCandidateDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {candidate ? (
+        {isLoading ? (
+          <ViewCandidateDialogSkeleton />
+        ) : candidate ? (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
