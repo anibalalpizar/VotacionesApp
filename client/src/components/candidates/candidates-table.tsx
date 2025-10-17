@@ -199,43 +199,21 @@ export function CandidatesTable() {
           const candidate = row.original
 
           return (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-8 w-8 text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50 dark:text-cyan-400 dark:hover:text-cyan-300 dark:hover:bg-cyan-950/30 transition-colors"
                       disabled={isLoadingCandidate}
-                      onClick={async () => {
-                        setIsLoadingCandidate(true)
-                        try {
-                          const result = await getCandidateByIdAction(
-                            candidate.candidateId
-                          )
-
-                          if (result.success && result.data) {
-                            setSelectedCandidateId(candidate.candidateId)
-                            setViewDialogOpen(true)
-                          } else {
-                            toast.error(
-                              result.message ||
-                                "Error al cargar detalles del candidato"
-                            )
-                          }
-                        } catch (error) {
-                          toast.error("Error de conexión al cargar detalles")
-                        } finally {
-                          setIsLoadingCandidate(false)
-                        }
+                      onClick={() => {
+                        setSelectedCandidateId(candidate.candidateId)
+                        setViewDialogOpen(true)
                       }}
                     >
-                      {isLoadingCandidate ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      <Eye className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -250,7 +228,7 @@ export function CandidatesTable() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:text-amber-300 dark:hover:bg-amber-950/30 transition-colors"
                       disabled={isLoadingCandidate}
                       onClick={async () => {
                         setIsLoadingCandidate(true)
@@ -290,7 +268,7 @@ export function CandidatesTable() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30 transition-colors"
                       onClick={() => {
                         setSelectedCandidateForDelete(candidate)
                         setDeleteDialogOpen(true)
