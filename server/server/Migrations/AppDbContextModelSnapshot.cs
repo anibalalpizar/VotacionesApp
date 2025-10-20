@@ -177,7 +177,8 @@ namespace server.Migrations
 
                     b.HasIndex("ElectionId");
 
-                    b.HasIndex("VoterId");
+                    b.HasIndex("VoterId", "ElectionId")
+                        .IsUnique();
 
                     b.ToTable("Votes", (string)null);
                 });

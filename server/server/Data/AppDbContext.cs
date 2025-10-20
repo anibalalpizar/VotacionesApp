@@ -77,7 +77,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.ToTable("Votes");
             e.HasKey(x => x.VoteId);
-            e.Property(x => x.VoteId).ValueGeneratedOnAdd();      
+            e.Property(x => x.VoteId).ValueGeneratedOnAdd();
 
             e.HasOne(x => x.Voter)
                 .WithMany()
@@ -93,6 +93,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .WithMany()
                 .HasForeignKey(x => x.CandidateId)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            //Garantizar 1 voto por Voter -> Election
+            e.HasIndex(x => new { x.VoterId, x.ElectionId }).IsUnique();
         });
 
         // AuditLog (FK -> Users)
