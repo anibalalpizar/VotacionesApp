@@ -46,9 +46,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             // Fuerza datetimeoffset(0..7). 7 es el máximo (recomendado).
             e.Property(x => x.StartDate).HasColumnType("datetimeoffset(0)").IsRequired();
             e.Property(x => x.EndDate).HasColumnType("datetimeoffset(0)").IsRequired();
-
-            // Si mantienes Status en BD:
-           // e.Property(x => x.Status).HasMaxLength(20);
         });
 
 

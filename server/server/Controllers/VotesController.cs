@@ -16,7 +16,7 @@ namespace Server.Controllers;
 public class VotesController : ControllerBase
 {
     private readonly AppDbContext _db;
-    private readonly IMailSender _mail; // opcional: confirmación por correo
+    private readonly IMailSender _mail; // Confirmación por correo
 
     public VotesController(AppDbContext db, IMailSender mail)
     {
@@ -108,7 +108,7 @@ public class VotesController : ControllerBase
                 VoterId = voterId.Value,
                 ElectionId = req.ElectionId,
                 CandidateId = req.CandidateId,
-                CastedAt = DateTime.UtcNow // tu modelo usa DateTime (no Offset)
+                CastedAt = DateTime.UtcNow 
             };
 
             _db.Votes.Add(vote);
@@ -116,7 +116,7 @@ public class VotesController : ControllerBase
 
             await tx.CommitAsync(ct);
 
-            // (Opcional) email de confirmación
+            // Email de confirmación
             _ = SendVoteEmailConfirmationSafe(voterId.Value, election, candidate);
 
             var resp = new CastVoteResponse
