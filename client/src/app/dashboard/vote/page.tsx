@@ -2,11 +2,10 @@ import { Suspense } from "react"
 import { AuthGuard } from "@/components/auth-guard"
 import { CandidateList } from "@/components/vote/candidate-list"
 import { Loader2 } from "lucide-react"
-import type { User } from "@/lib/types"
 
 export default function VotePage() {
   return (
-    <AuthGuard requiredRoles={["ADMIN", "VOTER"] as User["role"][]}>
+    <AuthGuard requiredRole="VOTER">
       <main className="min-h-screen bg-background">
         <Suspense
           fallback={
