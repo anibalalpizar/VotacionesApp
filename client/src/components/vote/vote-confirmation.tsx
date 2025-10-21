@@ -20,10 +20,11 @@ import {
   Vote,
   ShieldCheck,
   PartyPopper,
-  Loader2,
 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { VoteConfirmationSkeleton } from "./vote-confirmation-skeleton"
+import { castVoteAction } from "@/lib/actions"
+import { toast } from "sonner"
 
 // Types
 interface Candidate {
@@ -120,14 +121,36 @@ export function VoteConfirmation() {
   }
 
   const handleSubmitVote = async () => {
+    if (!candidate) return
+
     setIsSubmitting(true)
 
-    // Simulate API call - Aquí irá tu action real cuando lo implementes
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    try {
+      const result = await castVoteAction({
+        electionId: candidate.electionId,
+        candidateId: candidate.candidateId,
+      })
 
-    setIsSubmitting(false)
-    setShowReconfirmDialog(false)
-    setVoteSubmitted(true)
+      if (result.success) {
+        toast.success(result.message || "Voto registrado exitosamente")
+        setShowReconfirmDialog(false)
+        setVoteSubmitted(true)
+      } else {
+        toast.error(result.message || "Error al registrar el voto")
+
+        if (result.message?.includes("Ya has emitido tu voto")) {
+          setShowReconfirmDialog(false)
+          setTimeout(() => {
+            router.push("/dashboard/vote")
+          }, 2000)
+        }
+      }
+    } catch (error) {
+      console.error("Error submitting vote:", error)
+      toast.error("Error de conexión al registrar el voto")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   // Loading state
