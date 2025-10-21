@@ -33,10 +33,11 @@ const data = {
       title: "Votar",
       url: "/dashboard/vote",
       icon: Vote,
+      voterOnly: true,
     },
     {
       title: "Elecciones",
-      url: "#",
+      url: "/dashboard/elections",
       icon: Vote,
       adminOnly: true,
       items: [
@@ -53,7 +54,7 @@ const data = {
     },
     {
       title: "Votantes",
-      url: "#",
+      url: "/dashboard/voters",
       icon: UserPlus,
       adminOnly: true,
       items: [
@@ -69,7 +70,7 @@ const data = {
     },
     {
       title: "Candidatos",
-      url: "#",
+      url: "/dashboard/candidates",
       icon: UserPlus,
       adminOnly: true,
       items: [
@@ -85,7 +86,7 @@ const data = {
     },
     {
       title: "Reportes",
-      url: "#",
+      url: "/dashboard/reports/stats",
       icon: BarChart3,
       items: [
         {
@@ -125,6 +126,13 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
       ) {
         return false
       }
+      if (
+        "voterOnly" in section &&
+        section.voterOnly &&
+        user.role !== "VOTER"
+      ) {
+        return false
+      }
       return true
     })
     .map((section) => {
@@ -136,6 +144,13 @@ export function AppSidebar({ user, ...props }: AppSidebarProps) {
               "adminOnly" in item &&
               item.adminOnly &&
               user.role !== "ADMIN"
+            ) {
+              return false
+            }
+            if (
+              "voterOnly" in item &&
+              item.voterOnly &&
+              user.role !== "VOTER"
             ) {
               return false
             }
