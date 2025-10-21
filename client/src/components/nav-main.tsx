@@ -1,6 +1,7 @@
 "use client"
 
 import { ChevronRight, type LucideIcon } from "lucide-react"
+import Link from "next/link"
 
 import {
   Collapsible,
@@ -41,10 +42,10 @@ export function NavMain({
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton asChild tooltip={item.title}>
-                  <a href={item.url}>
+                  <Link href={item.url}>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )
@@ -58,34 +59,29 @@ export function NavMain({
               className="group/collapsible"
             >
               <SidebarMenuItem>
-                <div className="flex items-center w-full">
-                  <SidebarMenuButton
-                    asChild
-                    tooltip={item.title}
-                    className="flex-1"
-                  >
-                    <a href={item.url} className="flex items-center gap-2">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton tooltip={item.title} className="group">
+                    <Link
+                      href={item.url}
+                      className="flex items-center gap-2 flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                      }}
+                    >
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
+                    <ChevronRight className="ml-auto transition-all duration-200 group-data-[state=open]/collapsible:rotate-90 hover:text-primary cursor-pointer" />
                   </SidebarMenuButton>
-                  <CollapsibleTrigger asChild>
-                    <button
-                      className="p-1.5 hover:bg-sidebar-accent rounded-md transition-colors"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                    </button>
-                  </CollapsibleTrigger>
-                </div>
+                </CollapsibleTrigger>
                 <CollapsibleContent>
                   <SidebarMenuSub>
                     {item.items.map((subItem) => (
                       <SidebarMenuSubItem key={subItem.title}>
                         <SidebarMenuSubButton asChild>
-                          <a href={subItem.url}>
+                          <Link href={subItem.url}>
                             <span>{subItem.title}</span>
-                          </a>
+                          </Link>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     ))}
