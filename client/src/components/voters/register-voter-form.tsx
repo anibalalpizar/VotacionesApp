@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -18,6 +19,7 @@ import { registerVoterAction } from "@/lib/actions"
 export function RegisterVoterForm() {
   const [isLoading, setIsLoading] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
+  const router = useRouter()
 
   async function handleSubmit() {
     if (!formRef.current) return
@@ -31,10 +33,10 @@ export function RegisterVoterForm() {
 
       if (result.success) {
         toast.success(result.message)
-        // Solo resetear el formulario cuando el registro es exitoso
         formRef.current?.reset()
+
+        router.push("/dashboard/voters")
       } else {
-        // No resetear el formulario en caso de error
         toast.error(result.message)
       }
     } catch (error) {

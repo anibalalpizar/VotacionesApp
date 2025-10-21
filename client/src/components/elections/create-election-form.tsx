@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -18,6 +19,7 @@ import { createElectionAction } from "@/lib/actions"
 export function CreateElectionForm() {
   const [isLoading, setIsLoading] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
+  const router = useRouter()
 
   const now = new Date()
   const localDate = now.toISOString().split("T")[0]
@@ -36,6 +38,8 @@ export function CreateElectionForm() {
       if (result.success) {
         toast.success(result.message)
         formRef.current?.reset()
+
+        router.push("/dashboard/elections")
       } else {
         toast.error(result.message)
       }

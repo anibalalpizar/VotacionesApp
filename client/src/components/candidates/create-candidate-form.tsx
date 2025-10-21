@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -30,7 +31,6 @@ import {
 import { cn } from "@/lib/utils"
 import { createCandidateAction, getAllElectionsAction } from "@/lib/actions"
 
-
 export function CreateCandidateForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingElections, setIsLoadingElections] = useState(true)
@@ -40,6 +40,7 @@ export function CreateCandidateForm() {
     Array<{ electionId: string; name: string }>
   >([])
   const formRef = useRef<HTMLFormElement>(null)
+  const router = useRouter()
 
   useEffect(() => {
     loadElections()
@@ -82,6 +83,8 @@ export function CreateCandidateForm() {
         toast.success(result.message)
         formRef.current?.reset()
         setSelectedElectionId("")
+
+        router.push("/dashboard/candidates")
       } else {
         toast.error(result.message)
       }
@@ -138,7 +141,9 @@ export function CreateCandidateForm() {
                     className="h-9"
                   />
                   <CommandList>
-                    <CommandEmpty>No se encontró ninguna elección.</CommandEmpty>
+                    <CommandEmpty>
+                      No se encontró ninguna elección.
+                    </CommandEmpty>
                     <CommandGroup>
                       {elections.map((election) => (
                         <CommandItem
@@ -169,11 +174,7 @@ export function CreateCandidateForm() {
                 </Command>
               </PopoverContent>
             </Popover>
-            <input
-              type="hidden"
-              name="electionId"
-              value={selectedElectionId}
-            />
+            <input type="hidden" name="electionId" value={selectedElectionId} />
           </div>
 
           <div className="space-y-2">
