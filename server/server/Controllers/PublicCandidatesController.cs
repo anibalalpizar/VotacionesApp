@@ -9,7 +9,7 @@ namespace Server.Controllers;
 
 [ApiController]
 [Route("api/public/candidates")]
-[Authorize(Roles = "VOTER")] // Solo votantes ven elecciones disponibles para votar
+[Authorize(Roles = "VOTER")]
 public class PublicCandidatesController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -19,7 +19,7 @@ public class PublicCandidatesController : ControllerBase
         _db = db;
     }
 
-    // Intenta obtener el UserId desde distintos claims comunes
+    // Obtiene el UserId desde claims comunes
     private int? GetUserId()
     {
         var keys = new[]
@@ -38,8 +38,7 @@ public class PublicCandidatesController : ControllerBase
         return null;
     }
 
-    /// Devuelve SOLO elecciones activas por fechas en las que el usuario NO ha votado,
-    /// junto con sus candidatos.
+    /// Devuelve TODAS las elecciones activas por fechas 
     [HttpGet("active")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -52,23 +51,22 @@ public class PublicCandidatesController : ControllerBase
 
         var now = DateTimeOffset.UtcNow;
 
-        // 1) Elecciones activas por rango de fechas
-        // 2) Excluir elecciones donde el usuario ya emitió un voto
+        // Elecciones activas por rango de fechas 
         var elections = await _db.Elections
             .AsNoTracking()
             .Where(e =>
                 e.StartDate != null && e.EndDate != null &&
                 e.StartDate!.Value <= now && now <= e.EndDate!.Value)
-            .Where(e => !_db.Votes.Any(v => v.ElectionId == e.ElectionId && v.VoterId == userId))
             .OrderBy(e => e.StartDate)
             .Select(e => new { e.ElectionId, e.Name })
             .ToListAsync(ct);
 
         if (elections.Count == 0)
-            return NotFound(new { message = "No hay elecciones activas disponibles para votar." });
+            return NotFound(new { message = "No hay elecciones activas en este momento." });
 
         var electionIds = elections.Select(e => e.ElectionId).ToList();
 
+        // Candidatos de esas elecciones
         var candidates = await _db.Candidates
             .AsNoTracking()
             .Where(c => electionIds.Contains(c.ElectionId))
@@ -76,19 +74,37 @@ public class PublicCandidatesController : ControllerBase
             .Select(c => new { c.CandidateId, c.Name, c.Party, c.ElectionId })
             .ToListAsync(ct);
 
-        var result = elections.Select(e => new
+        // Votos del usuario en esas elecciones
+        var myVotes = await _db.Votes
+            .AsNoTracking()
+            .Where(v => v.VoterId == userId && electionIds.Contains(v.ElectionId))
+            .Select(v => v.ElectionId)
+            .ToListAsync(ct);
+        var myVotedElectionIds = myVotes.ToHashSet();
+
+        // Armar respuesta
+        var result = elections.Select(e =>
         {
-            electionId = e.ElectionId,
-            electionName = e.Name,
-            candidates = candidates
-                .Where(c => c.ElectionId == e.ElectionId)
-                .Select(c => new CandidateListItemDto
-                {
-                    CandidateId = c.CandidateId,
-                    Name = c.Name,
-                    Party = c.Party
-                })
-                .ToList()
+            var hasVoted = myVotedElectionIds.Contains(e.ElectionId);
+            return new
+            {
+                electionId = e.ElectionId,
+                electionName = e.Name,
+                hasVoted,                      
+                canVote = !hasVoted,           
+                notice = hasVoted
+                    ? "Ya has emitido tu voto en esta elección. No puedes volver a votar."
+                    : null,
+                candidates = candidates
+                    .Where(c => c.ElectionId == e.ElectionId)
+                    .Select(c => new CandidateListItemDto
+                    {
+                        CandidateId = c.CandidateId,
+                        Name = c.Name,
+                        Party = c.Party
+                    })
+                    .ToList()
+            };
         });
 
         return Ok(result);
