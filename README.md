@@ -444,12 +444,9 @@ npm run test
 
 ## 📝 Próximas Historias de Usuario
 
-- [ ] **HU5:** Como votante, quiero ver la lista de candidatos disponibles para seleccionar mi opción de voto.
-- [ ] **HU6:** Como votante, quiero seleccionar un candidato y emitir mi voto para participar en la elección.
-- [ ] **HU7:** Como sistema, debo asegurar que cada votante emita un único voto por elección para mantener la integridad del proceso.
 - [ ] **HU8:** Como administrador, quiero ver el total de votos por candidato para conocer los resultados de la elección.
 - [ ] **HU9:** Como administrador, quiero ver el porcentaje de votantes que emitieron su voto para evaluar la participación.
 - [ ] **HU10:** Como auditor, quiero ver un registro de acciones críticas para garantizar trazabilidad del proceso.
 
 ---
-**Última actualización:** 10 Octubre 2025
+**Última actualización:** 22 Octubre 2025
