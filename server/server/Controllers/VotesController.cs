@@ -108,7 +108,7 @@ public class VotesController : ControllerBase
                 VoterId = voterId.Value,
                 ElectionId = req.ElectionId,
                 CandidateId = req.CandidateId,
-                CastedAt = DateTime.UtcNow 
+                CastedAt = DateTime.UtcNow
             };
 
             _db.Votes.Add(vote);
@@ -117,7 +117,7 @@ public class VotesController : ControllerBase
             await tx.CommitAsync(ct);
 
             // Email de confirmación
-            _ = SendVoteEmailConfirmationSafe(voterId.Value, election, candidate);
+            await SendVoteEmailConfirmationSafe(voterId.Value, election, candidate);
 
             var resp = new CastVoteResponse
             {
