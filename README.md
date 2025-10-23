@@ -420,6 +420,70 @@ NEXT_PUBLIC_API_URL=https://api.tudominio.com
 - ✅ El log de auditoría registra la creación del candidato
 - ✅ La interfaz muestra la lista actualizada de candidatos
 
+## HU5: Emisión de Voto
+
+### Casos de Prueba
+
+| ID   | Descripción                | Entrada                                | Resultado Esperado                            | Estado |
+|------|-----------------------------|----------------------------------------|------------------------------------------------|--------|
+| T5.1 | **Voto exitoso**            | Votante habilitado elige candidato     | Voto registrado correctamente                  | ✅ |
+| T5.2 | **Voto duplicado**          | Intento de votar nuevamente            | Sistema bloquea la acción                      | ✅ |
+| T5.3 | **Elección no activa**      | Intentar votar fuera del periodo       | Error de validación / Acción rechazada         | ✅ |
+| T5.4 | **Votante inhabilitado**    | Usuario sin permisos                   | Acceso denegado                                | ✅ |
+| T5.5 | **Candidato inexistente**   | ID de candidato no válido              | Error “Candidato no encontrado”                | ✅ |
+
+### Pruebas de Integración
+
+- ✅ El sistema registra el voto correctamente en la base de datos.  
+- ✅ El sistema impide votos duplicados para el mismo usuario.  
+- ✅ Los intentos de voto fuera del periodo o sin permisos son rechazados.  
+- ✅ El log de auditoría registra todas las acciones de emisión de voto.  
+- ✅ La interfaz actualiza el estado del votante y muestra confirmación del voto.
+
+---
+
+## HU6: Conteo de Votos
+
+### Casos de Prueba
+
+| ID   | Descripción                 | Entrada                              | Resultado Esperado                             | Estado |
+|------|-----------------------------|--------------------------------------|-------------------------------------------------|--------|
+| T6.1 | **Conteo correcto total**   | Sumar todos los votos registrados    | Total coincide con el número de votos válidos   | ✅ |
+| T6.2 | **Conteo por candidato**    | Consultar resultados por elección    | Totales correctos agrupados por candidato       | ✅ |
+| T6.3 | **Conteo sin votos**        | Elección sin votos registrados       | Total cero sin errores                          | ✅ |
+| T6.4 | **Consulta tras cierre**    | Elección cerrada                     | Resultados visibles en modo solo lectura        | ✅ |
+
+### Pruebas de Integración
+
+- ✅ El sistema calcula correctamente el total general de votos.  
+- ✅ El sistema agrupa y muestra los resultados por candidato.  
+- ✅ Las consultas sobre elecciones cerradas se muestran en modo lectura.  
+- ✅ Los datos de conteo se obtienen directamente de la base de datos sin inconsistencias.  
+- ✅ La interfaz refleja correctamente los totales y los estados de cada elección.
+
+---
+
+## HU7: Publicación de Resultados
+
+### Casos de Prueba
+
+| ID   | Descripción                     | Entrada                              | Resultado Esperado                              | Estado |
+|------|----------------------------------|--------------------------------------|--------------------------------------------------|--------|
+| T7.1 | **Publicación exitosa**         | Elección finalizada correctamente    | Resultados generados y visibles al público       | ✅ |
+| T7.2 | **Intento de reapertura**       | Reabrir elección ya publicada        | Acción bloqueada, sistema mantiene cierre        | ✅ |
+| T7.3 | **Exportación de resultados**   | Descargar archivo CSV o JSON         | Archivo exportado completo y correcto            | ✅ |
+
+### Pruebas de Integración
+
+- ✅ El sistema permite publicar resultados solo si la elección está finalizada.  
+- ✅ Los datos publicados coinciden con los resultados almacenados en la base de datos.  
+- ✅ Los intentos de reapertura o modificación posterior a la publicación son bloqueados.  
+- ✅ El sistema genera correctamente los archivos de exportación (CSV / JSON).  
+- ✅ La interfaz muestra los resultados en formato legible y con opciones de descarga.
+
+---
+
+
 ### Cómo Ejecutar las Pruebas
 
 #### Pruebas Manuales
