@@ -33,6 +33,64 @@ Sistema de votación electrónica para la gestión de elecciones democráticas y
 
 **Estado:** ✅ Completada
 
+#### ✅ HU3: Creación de elección
+
+**Historia:** Como administrador, quiero crear una elección con nombre, fecha de inicio y fin para que los votantes puedan emitir su voto en el periodo definido.
+
+**Criterios de Aceptación:**
+
+- El sistema debe permitir crear una nueva elección. 
+- Solo pueden participar candidatos registrados. 
+- Solo pueden votar los votantes habilitados.
+
+**Estado:** ✅ Completada
+
+#### ✅ HU4: Registro de candidatos
+
+**Historia:** Como administrador, quiero registrar a los candidatos de la elección para definir la lista de opciones disponibles al votar.
+
+**Criterios de Aceptación:**
+
+- El sistema debe permitir ingresar el candidato y la agrupación que representa.
+- No se permiten dos candidatos con el mismo nombre en una elección.
+- Cada candidato debe quedar asociado a una elección.
+
+**Estado:** ✅ Completada
+
+#### ✅ HU5: Visualizar lista de candidatos
+
+**Historia:** Como votante, quiero ver la lista de candidatos disponibles para seleccionar mi opción de voto.
+
+**Criterios de Aceptación:**
+
+- La lista debe mostrar nombre y agrupación de cada candidato.
+- Solo se muestran candidatos de la elección activa.
+- El sistema debe contar con una interfaz clara e intuitiva, que permita la fácil lectura e identificación de los candidatos.
+
+**Estado:** ✅ Completada
+
+#### ✅ HU6: Emisión de voto
+
+**Historia:** Como votante, quiero seleccionar un candidato y emitir mi voto para participar en la elección.
+
+**Criterios de Aceptación:**
+
+- El sistema debe registrar el voto y marcar al votante como 'ya votó'.
+- El votante debe recibir confirmación del voto. 
+- No se debe permitir modificar el voto una vez emitido.
+
+**Estado:** ✅ Completada
+
+#### ✅ HU7: Restricción de voto único
+
+**Historia:** Como sistema, debo asegurar que cada votante emita un único voto por elección para mantener la integridad del proceso.
+
+**Criterios de Aceptación:**
+
+- Si un votante intenta votar dos veces, el sistema debe impedirlo.
+
+**Estado:** ✅ Completada
+
 ---
 
 ## 🎯 Definición de Hecho
