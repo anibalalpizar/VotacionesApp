@@ -426,11 +426,11 @@ NEXT_PUBLIC_API_URL=https://api.tudominio.com
 
 | ID   | Descripción                | Entrada                                | Resultado Esperado                            | Estado |
 |------|-----------------------------|----------------------------------------|------------------------------------------------|--------|
-| T5.1 | Voto exitoso**            | Votante habilitado elige candidato     | Voto registrado correctamente                  | ✅ |
-| T5.2 | Voto duplicado**          | Intento de votar nuevamente            | Sistema bloquea la acción                      | ✅ |
-| T5.3 | Elección no activa**      | Intentar votar fuera del periodo       | Error de validación / Acción rechazada         | ✅ |
-| T5.4 | Votante inhabilitado**    | Usuario sin permisos                   | Acceso denegado                                | ✅ |
-| T5.5 | Candidato inexistente**   | ID de candidato no válido              | Error “Candidato no encontrado”                | ✅ |
+| T5.1 | Voto exitoso                | Votante habilitado elige candidato     | Voto registrado correctamente                  | ✅ |
+| T5.2 | Voto duplicado              | Intento de votar nuevamente            | Sistema bloquea la acción                      | ✅ |
+| T5.3 | Elección no activa          | Intentar votar fuera del periodo       | Error de validación / Acción rechazada         | ✅ |
+| T5.4 | Votante inhabilitado        | Usuario sin permisos                   | Acceso denegado                                | ✅ |
+| T5.5 | Candidato inexistente       | ID de candidato no válido              | Error “Candidato no encontrado”                | ✅ |
 
 ### Pruebas de Integración
 
@@ -448,10 +448,10 @@ NEXT_PUBLIC_API_URL=https://api.tudominio.com
 
 | ID   | Descripción                 | Entrada                              | Resultado Esperado                             | Estado |
 |------|-----------------------------|--------------------------------------|-------------------------------------------------|--------|
-| T6.1 | Conteo correcto total**   | Sumar todos los votos registrados    | Total coincide con el número de votos válidos   | ✅ |
-| T6.2 | Conteo por candidato**    | Consultar resultados por elección    | Totales correctos agrupados por candidato       | ✅ |
-| T6.3 | Conteo sin votos**        | Elección sin votos registrados       | Total cero sin errores                          | ✅ |
-| T6.4 | Consulta tras cierre**    | Elección cerrada                     | Resultados visibles en modo solo lectura        | ✅ |
+| T6.1 | Conteo correcto total       | Sumar todos los votos registrados    | Total coincide con el número de votos válidos   | ✅ |
+| T6.2 | Conteo por candidato        | Consultar resultados por elección    | Totales correctos agrupados por candidato       | ✅ |
+| T6.3 | Conteo sin votos            | Elección sin votos registrados       | Total cero sin errores                          | ✅ |
+| T6.4 | Consulta tras cierre        | Elección cerrada                     | Resultados visibles en modo solo lectura        | ✅ |
 
 ### Pruebas de Integración
 
@@ -468,10 +468,10 @@ NEXT_PUBLIC_API_URL=https://api.tudominio.com
 ### Casos de Prueba
 
 | ID   | Descripción                     | Entrada                              | Resultado Esperado                              | Estado |
-|------|----------------------------------|--------------------------------------|--------------------------------------------------|--------|
-| T7.1 | Publicación exitosa**         | Elección finalizada correctamente    | Resultados generados y visibles al público       | ✅ |
-| T7.2 | Intento de reapertura**       | Reabrir elección ya publicada        | Acción bloqueada, sistema mantiene cierre        | ✅ |
-| T7.3 | Exportación de resultados**   | Descargar archivo CSV o JSON         | Archivo exportado completo y correcto            | ✅ |
+|------|---------------------------------|--------------------------------------|--------------------------------------------------|--------|
+| T7.1 | Publicación exitosa             | Elección finalizada correctamente    | Resultados generados y visibles al público       | ✅ |
+| T7.2 | Intento de reapertura           | Reabrir elección ya publicada        | Acción bloqueada, sistema mantiene cierre        | ✅ |
+| T7.3 | Exportación de resultados       | Descargar archivo CSV o JSON         | Archivo exportado completo y correcto            | ✅ |
 
 ### Pruebas de Integración
 
