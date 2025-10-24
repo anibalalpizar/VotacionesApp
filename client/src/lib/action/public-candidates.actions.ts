@@ -11,6 +11,9 @@ export interface CandidateListItemDto {
 export interface GetActiveCandidatesResponse {
   electionId: number
   electionName: string
+  hasVoted: boolean
+  canVote: boolean
+  notice: string | null
   candidates: CandidateListItemDto[]
 }
 
