@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import { AuthGuard } from "@/components/auth-guard"
 import { ElectionResults } from "@/components/elections/election-results"
-import ElectionsResultsSkeleton from "@/components/elections/ElectionsResultsSkeleton"
+import ElectionsResultsSkeleton from "@/components/elections/elections-results-skeleton"
 
 export default function ElectionResultsPage() {
   return (
