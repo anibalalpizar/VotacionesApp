@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useId, useMemo } from "react"
 import { toast } from "sonner"
-import { Search, Eye, Pencil, Trash2, Plus } from "lucide-react"
+import { Search, Eye, Pencil, Trash2, Plus, BarChart3 } from "lucide-react"
 
 import type {
   Column,
@@ -271,9 +271,32 @@ export function ElectionsTable() {
         id: "actions",
         cell: ({ row }) => {
           const election = row.original
+          const isClosed = election.status === "Closed"
 
           return (
             <div className="flex items-center gap-2">
+              {isClosed && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-950/30 transition-colors"
+                        onClick={() => {
+                          window.location.href = `/dashboard/elections/results?electionId=${election.electionId}`
+                        }}
+                      >
+                        <BarChart3 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Ver resultados</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
