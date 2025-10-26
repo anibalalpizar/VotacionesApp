@@ -50,6 +50,24 @@ export interface UpdateElectionResponse {
   voteCount: number
 }
 
+export interface ElectionResultItemDto {
+  candidateId: number
+  name: string
+  party: string
+  votes: number
+}
+
+export interface ElectionResultDto {
+  electionId: number
+  electionName: string
+  startDateUtc: string | null
+  endDateUtc: string | null
+  isClosed: boolean
+  totalVotes: number
+  totalCandidates: number
+  items: ElectionResultItemDto[]
+}
+
 export async function createElectionAction(formData: FormData) {
   const token = await getAuthToken()
   if (!token) {
@@ -190,7 +208,7 @@ export async function getAllElectionsAction(
       }
     }
 
-      const result: GetAllElectionsResponse = await response.json()
+    const result: GetAllElectionsResponse = await response.json()
 
     return {
       success: true,
@@ -421,6 +439,89 @@ export async function deleteElectionAction(electionId: string) {
     return {
       success: true,
       message: "Elección eliminada exitosamente.",
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: "Error de conexión. Verifique su conexión a internet.",
+    }
+  }
+}
+
+export async function getElectionResultsAction(electionId: string) {
+  const token = await getAuthToken()
+  if (!token) {
+    return {
+      success: false,
+      message:
+        "No tienes autorización para ver resultados. Inicia sesión como administrador.",
+    }
+  }
+
+  try {
+    const API_BASE_URL =
+      process.env.NEXT_PUBLIC_API_URL || "https://localhost:7290"
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/elections/${electionId}/results`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      }
+    )
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return {
+          success: false,
+          message: "La elección no existe.",
+        }
+      }
+
+      if (response.status === 403) {
+        return {
+          success: false,
+          message:
+            "Los resultados solo pueden consultarse cuando la elección esté cerrada.",
+        }
+      }
+
+      let errorMessage = "Error al obtener los resultados de la elección."
+
+      try {
+        const errorData = await response.json()
+
+        if (errorData.message) {
+          errorMessage = errorData.message
+        } else if (errorData.error) {
+          errorMessage = errorData.error
+        } else if (errorData.title) {
+          errorMessage = errorData.title
+        }
+      } catch (parseError) {
+        try {
+          const errorText = await response.text()
+          if (errorText) {
+            errorMessage = errorText
+          }
+        } catch {}
+      }
+
+      return {
+        success: false,
+        message: errorMessage,
+      }
+    }
+
+    const result: ElectionResultDto = await response.json()
+
+    return {
+      success: true,
+      message: "Resultados obtenidos exitosamente",
+      data: result,
     }
   } catch (error) {
     return {
