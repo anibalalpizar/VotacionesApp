@@ -140,6 +140,9 @@ export function ElectionResults() {
     })
   }
 
+  const topVotes = results.items[0]?.votes || 0
+  const winnersCount = results.items.filter((c) => c.votes === topVotes).length
+  const hastie = winnersCount > 1 && topVotes > 0
   const winner = results.items[0]
 
   const chartConfig = results.items.reduce((config, candidate, index) => {
@@ -209,45 +212,102 @@ export function ElectionResults() {
         </div>
       </div>
 
-      <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-full bg-primary/10">
-              <Trophy className="w-8 h-8 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-2xl">Candidato Ganador</CardTitle>
-              <CardDescription>Con la mayoría de votos</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-3xl font-bold text-foreground">
-                {winner.name}
-              </h3>
-              <Badge
-                variant="outline"
-                className={`${getPartyColor(winner.party)} text-sm mt-2`}
-              >
-                {winner.party}
-              </Badge>
-            </div>
-            <div className="flex items-baseline gap-4">
-              <div className="text-5xl font-bold text-primary">
-                {results.totalVotes > 0
-                  ? ((winner.votes / results.totalVotes) * 100).toFixed(2)
-                  : "0.00"}
-                %
+      {!hastie ? (
+        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-full bg-primary/10">
+                <Trophy className="w-8 h-8 text-primary" />
               </div>
-              <div className="text-2xl text-muted-foreground">
-                {winner.votes.toLocaleString()} votos
+              <div>
+                <CardTitle className="text-2xl">Candidato Ganador</CardTitle>
+                <CardDescription>Con la mayoría de votos</CardDescription>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-3xl font-bold text-foreground">
+                  {winner.name}
+                </h3>
+                <Badge
+                  variant="outline"
+                  className={`${getPartyColor(winner.party)} text-sm mt-2`}
+                >
+                  {winner.party}
+                </Badge>
+              </div>
+              <div className="flex items-baseline gap-4">
+                <div className="text-5xl font-bold text-primary">
+                  {results.totalVotes > 0
+                    ? ((winner.votes / results.totalVotes) * 100).toFixed(2)
+                    : "0.00"}
+                  %
+                </div>
+                <div className="text-2xl text-muted-foreground">
+                  {winner.votes.toLocaleString()} votos
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border-2 border-amber-500/20 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-950/20">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-full bg-amber-100 dark:bg-amber-900/30">
+                <AlertCircle className="w-8 h-8 text-amber-600 dark:text-amber-500" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl">Empate Técnico</CardTitle>
+                <CardDescription>
+                  Múltiples candidatos con el mismo número de votos
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-foreground">
+                {winnersCount} candidatos empatados con {topVotes} voto
+                {topVotes !== 1 ? "s" : ""} cada uno:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {results.items
+                  .filter((c) => c.votes === topVotes)
+                  .map((candidate) => (
+                    <div
+                      key={candidate.candidateId}
+                      className="flex items-center gap-2"
+                    >
+                      <div className="font-semibold text-foreground">
+                        {candidate.name}
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={`${getPartyColor(candidate.party)} text-xs`}
+                      >
+                        {candidate.party}
+                      </Badge>
+                    </div>
+                  ))}
+              </div>
+              <div className="flex items-baseline gap-4 pt-2">
+                <div className="text-5xl font-bold text-amber-600 dark:text-amber-500">
+                  {results.totalVotes > 0
+                    ? ((topVotes / results.totalVotes) * 100).toFixed(2)
+                    : "0.00"}
+                  %
+                </div>
+                <div className="text-2xl text-muted-foreground">
+                  {topVotes.toLocaleString()} votos cada uno
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
@@ -425,11 +485,13 @@ export function ElectionResults() {
                 <div
                   key={candidate.candidateId}
                   className={`p-4 rounded-lg border transition-all ${
-                    isWinner
+                    isWinner && !hastie
                       ? "bg-yellow-50/50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-900"
-                      : isSecond
+                      : isWinner && hastie
+                      ? "bg-amber-50/50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900"
+                      : isSecond && !hastie
                       ? "bg-gray-50/50 border-gray-200 dark:bg-gray-950/20 dark:border-gray-800"
-                      : isThird
+                      : isThird && !hastie
                       ? "bg-amber-50/50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900"
                       : "bg-muted/30"
                   }`}
@@ -439,16 +501,18 @@ export function ElectionResults() {
                       <div className="flex items-center gap-3">
                         <div
                           className={`flex items-center justify-center w-10 h-10 rounded-full font-bold ${
-                            isWinner
+                            isWinner && !hastie
                               ? "bg-yellow-500 text-white"
-                              : isSecond
+                              : isWinner && hastie
+                              ? "bg-amber-500 text-white"
+                              : isSecond && !hastie
                               ? "bg-gray-400 text-white"
-                              : isThird
+                              : isThird && !hastie
                               ? "bg-amber-600 text-white"
                               : "bg-secondary text-secondary-foreground"
                           }`}
                         >
-                          {isWinner ? "🏆" : index + 1}
+                          {isWinner && !hastie ? "🏆" : index + 1}
                         </div>
                         <div>
                           <p className="font-semibold text-lg text-foreground">
@@ -499,7 +563,7 @@ export function ElectionResults() {
             <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
             <div className="space-y-1">
               <p className="text-sm font-medium text-foreground">
-                Resultados Oficiales
+                Resultados Oficiales Certificados
               </p>
               <p className="text-sm text-muted-foreground">
                 Estos resultados han sido verificados y certificados por la
