@@ -28,7 +28,14 @@ namespace UnitTests
 
         private static async Task SeedSampleData(AppDbContext db)
         {
-            var election = new Election { ElectionId = 1, Name = "Elección Nacional" };
+            var election = new Election
+            {
+                ElectionId = 1,
+                Name = "Elección Nacional",
+                StartDate = DateTime.Now,          // O la fecha que sea apropiada
+                EndDate = DateTime.Now.AddDays(1)  // O la fecha que sea apropiada
+            };
+
             db.Elections.Add(election);
 
             db.Candidates.AddRange(

@@ -102,6 +102,7 @@ namespace UnitTests
 
             Assert.AreEqual("fake-jwt-token", resp.Token);
             Assert.AreEqual("test@mail.com", resp.User.Email);
+
         }
 
         [TestMethod]
