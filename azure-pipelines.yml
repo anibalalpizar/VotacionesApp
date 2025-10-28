@@ -10,7 +10,7 @@ trigger:
   - main
 
 # Pool: Define el agente de ejecución donde se ejecutará el pipeline
-# ubuntu-latest: Máquina virtual con Ubuntu (más rápido y económico para .NET)
+# Usando agente local self-hosted
 pool:
   name: 'LocalPool'
 
@@ -79,38 +79,24 @@ steps:
   displayName: '🔗 Ejecutar pruebas de integración'
 
 # --------------------------------------------------------------------
-# PASO 6: Publicar resultados de pruebas unitarias
+# PASO 6: Publicar resultados de todas las pruebas
 # --------------------------------------------------------------------
 # Publica los resultados de las pruebas en Azure DevOps para visualización
 # testResultsFormat: Formato de los resultados (VSTest para archivos .trx)
 # testResultsFiles: Patrón para encontrar todos los archivos .trx generados
 # mergeTestResults: Combina todos los resultados en un solo reporte
 - task: PublishTestResults@2
-  displayName: '📊 Publicar resultados de pruebas unitarias'
+  displayName: '📊 Publicar resultados de pruebas'
   inputs:
     testResultsFormat: 'VSTest'
-    testResultsFiles: '**/UnitTests/TestResults/**/*.trx'
+    testResultsFiles: '**/*.trx'
     mergeTestResults: true
     failTaskOnFailedTests: true
-    testRunTitle: 'Pruebas Unitarias - VotacionesApp'
+    testRunTitle: 'Pruebas Unitarias e Integración - VotacionesApp'
   condition: succeededOrFailed()  # Se ejecuta incluso si hay fallos en pruebas
 
 # --------------------------------------------------------------------
-# PASO 7: Publicar resultados de pruebas de integración
-# --------------------------------------------------------------------
-# Similar al paso anterior, pero para pruebas de integración
-- task: PublishTestResults@2
-  displayName: '📊 Publicar resultados de pruebas de integración'
-  inputs:
-    testResultsFormat: 'VSTest'
-    testResultsFiles: '**/IntegrationTest/TestResults/**/*.trx'
-    mergeTestResults: true
-    failTaskOnFailedTests: true
-    testRunTitle: 'Pruebas de Integración - VotacionesApp'
-  condition: succeededOrFailed()
-
-# --------------------------------------------------------------------
-# PASO 8: Publicar cobertura de código
+# PASO 7: Publicar cobertura de código
 # --------------------------------------------------------------------
 # Publica los reportes de cobertura de código en Azure DevOps
 # Permite visualizar qué porcentaje del código está cubierto por pruebas
@@ -123,7 +109,7 @@ steps:
   condition: succeededOrFailed()
 
 # --------------------------------------------------------------------
-# PASO 9 (OPCIONAL): Publicar artefactos de compilación
+# PASO 8 (OPCIONAL): Publicar artefactos de compilación
 # --------------------------------------------------------------------
 # Genera un artefacto con los binarios compilados del proyecto
 # Útil para despliegues posteriores o para mantener un historial de builds
@@ -134,7 +120,7 @@ steps:
   condition: succeeded()  # Solo se ejecuta si todos los pasos anteriores fueron exitosos
 
 # --------------------------------------------------------------------
-# PASO 10 (OPCIONAL): Publicar artefactos en Azure Pipelines
+# PASO 9 (OPCIONAL): Publicar artefactos en Azure Pipelines
 # --------------------------------------------------------------------
 # Sube los artefactos generados a Azure DevOps
 # Permite descargarlos o usarlos en pipelines de CD (Continuous Deployment)
