@@ -51,7 +51,13 @@ steps:
 # Compila toda la solución respetando las dependencias entre proyectos
 - script: |
     cd server
-    dotnet build server.sln --configuration $(buildConfiguration) --no-restore
+    if exist *.sln (
+      echo Compilando solución completa...
+      dotnet build *.sln --configuration $(buildConfiguration) --no-restore
+    ) else (
+      echo Compilando todos los proyectos...
+      dotnet build --configuration $(buildConfiguration) --no-restore
+    )
   displayName: '🔨 Compilar proyecto completo en modo $(buildConfiguration)'
 
 # --------------------------------------------------------------------
@@ -65,16 +71,14 @@ steps:
   displayName: '🧪 Ejecutar pruebas unitarias'
 
 # --------------------------------------------------------------------
-# PASO 5: Ejecutar pruebas de integración (REQUIERE DOCKER)
+# PASO 5: Ejecutar pruebas de integración
 # --------------------------------------------------------------------
 # Ejecuta las pruebas de integración SIN recompilar
-# NOTA: Estas pruebas requieren Docker. Se omiten si Docker no está disponible.
-# Para habilitar: instala Docker Desktop en el agente o usa un agente con Docker
+# Genera reporte .trx y datos de cobertura de código
 - script: |
     cd server/IntegrationTest
     dotnet test --no-build --configuration $(buildConfiguration) --logger trx --results-directory TestResults --collect:"XPlat Code Coverage"
-  displayName: '🔗 Ejecutar pruebas de integración (requiere Docker)'
-  continueOnError: true
+  displayName: '🔗 Ejecutar pruebas de integración'
 
 # --------------------------------------------------------------------
 # PASO 6: DEBUG - Explorar estructura de archivos
@@ -121,7 +125,6 @@ steps:
 # PASO 8: Publicar resultados de pruebas de integración
 # --------------------------------------------------------------------
 # Publica los resultados de las pruebas de integración en Azure DevOps
-# No falla el pipeline si no hay pruebas de integración disponibles
 - task: PublishTestResults@2
   displayName: '📊 Publicar resultados de pruebas de integración'
   inputs:
@@ -129,8 +132,8 @@ steps:
     testResultsFiles: '**/IntegrationTest/TestResults/**/*.trx'
     searchFolder: '$(System.DefaultWorkingDirectory)'
     mergeTestResults: false
-    failTaskOnFailedTests: false
-    testRunTitle: 'Pruebas de Integración - VotacionesApp (requiere Docker)'
+    failTaskOnFailedTests: true
+    testRunTitle: 'Pruebas de Integración - VotacionesApp'
   condition: succeededOrFailed()
 
 # --------------------------------------------------------------------
@@ -150,10 +153,14 @@ steps:
 # PASO 10 (OPCIONAL): Publicar artefactos de compilación
 # --------------------------------------------------------------------
 # Genera los archivos binarios listos para despliegue
-# Publica específicamente el proyecto server (aplicación principal)
+# Esto crea una versión publicable de la aplicación
 - script: |
     cd server
-    dotnet publish server/server.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
+    if exist *.sln (
+      dotnet publish *.sln --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
+    ) else (
+      dotnet publish server/server.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
+    )
   displayName: '📦 Generar artefactos de publicación'
   condition: succeeded()
 
@@ -168,54 +175,3 @@ steps:
     ArtifactName: 'VotacionesApp-$(Build.BuildId)'
     publishLocation: 'Container'
   condition: succeeded()
-
-# ====================================================================
-# CAMBIOS REALIZADOS EN ESTA VERSIÓN:
-# ====================================================================
-# 1. AGREGADA detección automática de archivo .sln
-#    Si existe un .sln, se usa para compilar toda la solución
-#    Esto resuelve las referencias entre proyectos correctamente
-#
-# 2. RESTAURADO el uso de --no-build en dotnet test
-#    Ahora que la compilación completa funciona, podemos usar --no-build
-#
-# 3. MEJORADO el paso de DEBUG para mostrar la estructura de proyectos
-#    Ahora muestra todos los .csproj y .sln encontrados
-#
-# ====================================================================
-# SOLUCIÓN AL ERROR "Server not found":
-# ====================================================================
-# El error ocurría porque los proyectos se compilaban de forma aislada
-# sin respetar las referencias entre proyectos. Ahora:
-#
-# 1. Se compila toda la solución en un solo paso
-# 2. .NET resuelve automáticamente las dependencias entre proyectos
-# 3. Los binarios se generan en el orden correcto
-# 4. Las pruebas pueden encontrar todas las referencias necesarias
-# ====================================================================
-# NOTAS ADICIONALES:
-# ====================================================================
-# 1. Este pipeline implementa "Shift Left Testing" al ejecutar pruebas
-#    automáticamente en cada commit
-#
-# 2. failTaskOnFailedTests: true asegura que el pipeline falle si hay
-#    pruebas que no pasan, manteniendo el "build verde"
-#
-# 3. Los reportes .trx se pueden visualizar en la pestaña "Tests" de
-#    Azure DevOps después de cada ejecución
-#
-# 4. La cobertura de código ayuda a identificar áreas sin probar
-#
-# 5. Los artefactos permiten mantener un historial de versiones
-#    compiladas y facilitan el despliegue continuo (CD)
-#
-# 6. condition: succeededOrFailed() permite que los reportes se publiquen
-#    incluso si las pruebas fallan, para poder ver qué salió mal
-#
-# 7. Si NO tienes un archivo .sln, créalo con:
-#    dotnet new sln -n VotacionesApp
-#    dotnet sln add server/server.csproj
-#    dotnet sln add server/EleccionesUTN/EleccionesUTN.csproj
-#    dotnet sln add server/UnitTests/UnitTests.csproj
-#    dotnet sln add server/IntegrationTest/IntegrationTest.csproj
-# ====================================================================
