@@ -12,7 +12,7 @@ trigger:
 # Pool: Define el agente de ejecución donde se ejecutará el pipeline
 # ubuntu-latest: Máquina virtual con Ubuntu (más rápido y económico para .NET)
 pool:
-  vmImage: 'LocalPool'
+  name: 'LocalPool'
 
 # Variables globales del pipeline
 variables:
