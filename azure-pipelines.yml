@@ -39,16 +39,10 @@ steps:
 # PASO 2: Restaurar dependencias de TODA la solución
 # --------------------------------------------------------------------
 # Descarga todos los paquetes NuGet necesarios para TODO el proyecto
-# Busca archivos .sln o .csproj en el directorio server
+# Usa el archivo server.sln para restaurar toda la solución
 - script: |
     cd server
-    if exist *.sln (
-      echo Encontrado archivo de solución, restaurando...
-      dotnet restore *.sln --verbosity normal
-    ) else (
-      echo No hay archivo .sln, restaurando todos los proyectos...
-      dotnet restore --verbosity normal
-    )
+    dotnet restore server.sln --verbosity normal
   displayName: '🔄 Restaurar dependencias (NuGet packages)'
 
 # --------------------------------------------------------------------
@@ -57,13 +51,7 @@ steps:
 # Compila toda la solución respetando las dependencias entre proyectos
 - script: |
     cd server
-    if exist *.sln (
-      echo Compilando solución completa...
-      dotnet build *.sln --configuration $(buildConfiguration) --no-restore
-    ) else (
-      echo Compilando todos los proyectos...
-      dotnet build --configuration $(buildConfiguration) --no-restore
-    )
+    dotnet build server.sln --configuration $(buildConfiguration) --no-restore
   displayName: '🔨 Compilar proyecto completo en modo $(buildConfiguration)'
 
 # --------------------------------------------------------------------
@@ -159,14 +147,10 @@ steps:
 # PASO 10 (OPCIONAL): Publicar artefactos de compilación
 # --------------------------------------------------------------------
 # Genera los archivos binarios listos para despliegue
-# Esto crea una versión publicable de la aplicación
+# Publica específicamente el proyecto server (aplicación principal)
 - script: |
     cd server
-    if exist *.sln (
-      dotnet publish *.sln --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
-    ) else (
-      dotnet publish server/server.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
-    )
+    dotnet publish server/server.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
   displayName: '📦 Generar artefactos de publicación'
   condition: succeeded()
 
