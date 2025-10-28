@@ -55,7 +55,7 @@ steps:
 # --------------------------------------------------------------------
 - script: |
     echo Ejecutando pruebas unitarias...
-    dotnet test server/UnitTests/UnitTests.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/UnitTests/TestResults --collect:"XPlat Code Coverage"
+    dotnet test server/UnitTests/UnitTests.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/UnitTests/TestResults /p:CollectCoverage=false"
   displayName: '🧪 Ejecutar pruebas unitarias'
 
 # --------------------------------------------------------------------
@@ -63,7 +63,7 @@ steps:
 # --------------------------------------------------------------------
 - script: |
     echo Ejecutando pruebas de integración...
-    dotnet test server/IntegrationTest/IntegrationTest.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/IntegrationTest/TestResults --collect:"XPlat Code Coverage"
+    dotnet test server/IntegrationTest/IntegrationTest.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/IntegrationTest/TestResults /p:CollectCoverage=false"
   displayName: '🔗 Ejecutar pruebas de integración'
 
 # --------------------------------------------------------------------
