@@ -61,11 +61,12 @@ steps:
 # Ejecuta todas las pruebas del proyecto UnitTests
 # --no-build: No recompila (usa la compilación anterior)
 # --verbosity normal: Nivel de detalle de la salida
-# --logger trx: Genera un archivo de resultados en formato TRX (Test Results XML)
+# --logger: Genera archivo .trx en directorio específico
+# --results-directory: Especifica dónde guardar los resultados
 # --collect:"XPlat Code Coverage": Recolecta información de cobertura de código
 - script: |
     cd server/UnitTests
-    dotnet test --no-build --configuration $(buildConfiguration) --verbosity normal --logger trx --collect:"XPlat Code Coverage"
+    dotnet test --no-build --configuration $(buildConfiguration) --verbosity normal --logger "trx;LogFileName=unittests.trx" --results-directory $(Build.ArtifactStagingDirectory)/TestResults --collect:"XPlat Code Coverage"
   displayName: '🧪 Ejecutar pruebas unitarias'
 
 # --------------------------------------------------------------------
@@ -75,7 +76,7 @@ steps:
 # Utiliza los mismos parámetros que las pruebas unitarias
 - script: |
     cd server/IntegrationTest
-    dotnet test --no-build --configuration $(buildConfiguration) --verbosity normal --logger trx --collect:"XPlat Code Coverage"
+    dotnet test --no-build --configuration $(buildConfiguration) --verbosity normal --logger "trx;LogFileName=integrationtests.trx" --results-directory $(Build.ArtifactStagingDirectory)/TestResults --collect:"XPlat Code Coverage"
   displayName: '🔗 Ejecutar pruebas de integración'
 
 # --------------------------------------------------------------------
@@ -89,7 +90,7 @@ steps:
   displayName: '📊 Publicar resultados de pruebas'
   inputs:
     testResultsFormat: 'VSTest'
-    testResultsFiles: '**/*.trx'
+    testResultsFiles: '$(Build.ArtifactStagingDirectory)/TestResults/*.trx'
     mergeTestResults: true
     failTaskOnFailedTests: true
     testRunTitle: 'Pruebas Unitarias e Integración - VotacionesApp'
@@ -104,7 +105,7 @@ steps:
   displayName: '📈 Publicar cobertura de código'
   inputs:
     codeCoverageTool: 'Cobertura'
-    summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.cobertura.xml'
+    summaryFileLocation: '$(Build.ArtifactStagingDirectory)/TestResults/**/coverage.cobertura.xml'
     failIfCoverageEmpty: false
   condition: succeededOrFailed()
 
