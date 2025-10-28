@@ -38,60 +38,47 @@ steps:
 # --------------------------------------------------------------------
 # PASO 2: Restaurar dependencias del proyecto
 # --------------------------------------------------------------------
-# Descarga todos los paquetes NuGet necesarios para el proyecto
+# Descarga todos los paquetes NuGet necesarios para TODO el proyecto
+# Esto asegura que los archivos project.assets.json se generen correctamente
 - script: |
     cd server
-    dotnet restore
+    dotnet restore --verbosity normal
   displayName: '🔄 Restaurar dependencias (NuGet packages)'
 
 # --------------------------------------------------------------------
 # PASO 3: Compilar TODO el proyecto (incluyendo pruebas)
 # --------------------------------------------------------------------
 # Compila toda la solución incluyendo los proyectos de pruebas
+# Esto genera los binarios en modo Release para todos los proyectos
 - script: |
     cd server
     dotnet build --configuration $(buildConfiguration) --no-restore
   displayName: '🔨 Compilar proyecto completo en modo $(buildConfiguration)'
 
 # --------------------------------------------------------------------
-# PASO 4: Compilar proyecto de pruebas unitarias
+# PASO 4: Ejecutar pruebas unitarias
 # --------------------------------------------------------------------
-# Compilar explícitamente el proyecto de pruebas unitarias
+# Ejecuta las pruebas unitarias compilando si es necesario
+# Genera reporte .trx y datos de cobertura de código
 - script: |
     cd server/UnitTests
-    dotnet build --configuration $(buildConfiguration) --no-restore
-  displayName: '🔨 Compilar proyecto de pruebas unitarias'
-
-# --------------------------------------------------------------------
-# PASO 5: Compilar proyecto de pruebas de integración
-# --------------------------------------------------------------------
-# Compilar explícitamente el proyecto de pruebas de integración
-- script: |
-    cd server/IntegrationTest
-    dotnet build --configuration $(buildConfiguration) --no-restore
-  displayName: '🔨 Compilar proyecto de pruebas de integración'
-
-# --------------------------------------------------------------------
-# PASO 6: Ejecutar pruebas unitarias
-# --------------------------------------------------------------------
-# Ejecuta las pruebas SIN recompilar (ya están compiladas en Release)
-- script: |
-    cd server/UnitTests
-    dotnet test --no-build --configuration $(buildConfiguration) --logger trx --results-directory TestResults --collect:"XPlat Code Coverage"
+    dotnet test --configuration $(buildConfiguration) --logger trx --results-directory TestResults --collect:"XPlat Code Coverage"
   displayName: '🧪 Ejecutar pruebas unitarias'
 
 # --------------------------------------------------------------------
-# PASO 7: Ejecutar pruebas de integración
+# PASO 5: Ejecutar pruebas de integración
 # --------------------------------------------------------------------
-# Ejecuta las pruebas SIN recompilar
+# Ejecuta las pruebas de integración compilando si es necesario
+# Genera reporte .trx y datos de cobertura de código
 - script: |
     cd server/IntegrationTest
-    dotnet test --no-build --configuration $(buildConfiguration) --logger trx --results-directory TestResults --collect:"XPlat Code Coverage"
+    dotnet test --configuration $(buildConfiguration) --logger trx --results-directory TestResults --collect:"XPlat Code Coverage"
   displayName: '🔗 Ejecutar pruebas de integración'
 
 # --------------------------------------------------------------------
-# PASO 8: DEBUG - Explorar estructura de archivos
+# PASO 6: DEBUG - Explorar estructura de archivos
 # --------------------------------------------------------------------
+# Este paso ayuda a diagnosticar problemas mostrando qué archivos se generaron
 - script: |
     echo === Directorio de trabajo actual ===
     cd
@@ -111,13 +98,15 @@ steps:
   condition: always()
 
 # --------------------------------------------------------------------
-# PASO 9: Publicar resultados de pruebas unitarias
+# PASO 7: Publicar resultados de pruebas unitarias
 # --------------------------------------------------------------------
+# Publica los resultados de las pruebas unitarias en Azure DevOps
+# Estos se pueden visualizar en la pestaña "Tests" del pipeline
 - task: PublishTestResults@2
   displayName: '📊 Publicar resultados de pruebas unitarias'
   inputs:
     testResultsFormat: 'VSTest'
-    testResultsFiles: '**/UnitTests/TestResults/*.trx'
+    testResultsFiles: '**/UnitTests/TestResults/**/*.trx'
     searchFolder: '$(System.DefaultWorkingDirectory)'
     mergeTestResults: false
     failTaskOnFailedTests: true
@@ -125,13 +114,14 @@ steps:
   condition: succeededOrFailed()
 
 # --------------------------------------------------------------------
-# PASO 10: Publicar resultados de pruebas de integración
+# PASO 8: Publicar resultados de pruebas de integración
 # --------------------------------------------------------------------
+# Publica los resultados de las pruebas de integración en Azure DevOps
 - task: PublishTestResults@2
   displayName: '📊 Publicar resultados de pruebas de integración'
   inputs:
     testResultsFormat: 'VSTest'
-    testResultsFiles: '**/IntegrationTest/TestResults/*.trx'
+    testResultsFiles: '**/IntegrationTest/TestResults/**/*.trx'
     searchFolder: '$(System.DefaultWorkingDirectory)'
     mergeTestResults: false
     failTaskOnFailedTests: true
@@ -139,8 +129,10 @@ steps:
   condition: succeededOrFailed()
 
 # --------------------------------------------------------------------
-# PASO 11: Publicar cobertura de código
+# PASO 9: Publicar cobertura de código
 # --------------------------------------------------------------------
+# Publica los reportes de cobertura de código en Azure DevOps
+# Esto permite visualizar qué porcentaje del código está cubierto por pruebas
 - task: PublishCodeCoverageResults@2
   displayName: '📈 Publicar cobertura de código'
   inputs:
@@ -150,8 +142,10 @@ steps:
   condition: succeededOrFailed()
 
 # --------------------------------------------------------------------
-# PASO 12 (OPCIONAL): Publicar artefactos de compilación
+# PASO 10 (OPCIONAL): Publicar artefactos de compilación
 # --------------------------------------------------------------------
+# Genera los archivos binarios listos para despliegue
+# Esto crea una versión publicable de la aplicación
 - script: |
     cd server
     dotnet publish --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
@@ -159,8 +153,9 @@ steps:
   condition: succeeded()
 
 # --------------------------------------------------------------------
-# PASO 13 (OPCIONAL): Publicar artefactos en Azure Pipelines
+# PASO 11 (OPCIONAL): Publicar artefactos en Azure Pipelines
 # --------------------------------------------------------------------
+# Sube los artefactos generados a Azure DevOps para su descarga o despliegue
 - task: PublishBuildArtifacts@1
   displayName: '☁️ Publicar artefactos en Azure DevOps'
   inputs:
@@ -169,6 +164,22 @@ steps:
     publishLocation: 'Container'
   condition: succeeded()
 
+# ====================================================================
+# CAMBIOS REALIZADOS EN ESTA VERSIÓN:
+# ====================================================================
+# 1. ELIMINADOS los pasos de compilación individual de proyectos de pruebas
+#    (Pasos 4 y 5 originales) porque causaban el error NETSDK1004
+#
+# 2. MODIFICADO dotnet test para que compile automáticamente si es necesario
+#    Quitamos --no-build para evitar problemas de dependencias
+#
+# 3. MEJORADO el patrón de búsqueda de archivos .trx:
+#    De: '**/UnitTests/TestResults/*.trx'
+#    A:  '**/UnitTests/TestResults/**/*.trx'
+#    Esto busca en todos los subdirectorios recursivamente
+#
+# 4. El restore ahora incluye --verbosity normal para mejor diagnóstico
+#
 # ====================================================================
 # NOTAS ADICIONALES:
 # ====================================================================
@@ -185,4 +196,7 @@ steps:
 #
 # 5. Los artefactos permiten mantener un historial de versiones
 #    compiladas y facilitan el despliegue continuo (CD)
+#
+# 6. condition: succeededOrFailed() permite que los reportes se publiquen
+#    incluso si las pruebas fallan, para poder ver qué salió mal
 # ====================================================================
