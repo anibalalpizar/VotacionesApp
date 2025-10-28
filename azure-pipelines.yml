@@ -36,43 +36,54 @@ steps:
     installationPath: $(Agent.ToolsDirectory)/dotnet
 
 # --------------------------------------------------------------------
-# PASO 2: Restaurar dependencias del proyecto
+# PASO 2: Restaurar dependencias de TODA la solución
 # --------------------------------------------------------------------
 # Descarga todos los paquetes NuGet necesarios para TODO el proyecto
-# Esto asegura que los archivos project.assets.json se generen correctamente
+# Busca archivos .sln o .csproj en el directorio server
 - script: |
     cd server
-    dotnet restore --verbosity normal
+    if exist *.sln (
+      echo Encontrado archivo de solución, restaurando...
+      dotnet restore *.sln --verbosity normal
+    ) else (
+      echo No hay archivo .sln, restaurando todos los proyectos...
+      dotnet restore --verbosity normal
+    )
   displayName: '🔄 Restaurar dependencias (NuGet packages)'
 
 # --------------------------------------------------------------------
 # PASO 3: Compilar TODO el proyecto (incluyendo pruebas)
 # --------------------------------------------------------------------
-# Compila toda la solución incluyendo los proyectos de pruebas
-# Esto genera los binarios en modo Release para todos los proyectos
+# Compila toda la solución respetando las dependencias entre proyectos
 - script: |
     cd server
-    dotnet build --configuration $(buildConfiguration) --no-restore
+    if exist *.sln (
+      echo Compilando solución completa...
+      dotnet build *.sln --configuration $(buildConfiguration) --no-restore
+    ) else (
+      echo Compilando todos los proyectos...
+      dotnet build --configuration $(buildConfiguration) --no-restore
+    )
   displayName: '🔨 Compilar proyecto completo en modo $(buildConfiguration)'
 
 # --------------------------------------------------------------------
 # PASO 4: Ejecutar pruebas unitarias
 # --------------------------------------------------------------------
-# Ejecuta las pruebas unitarias compilando si es necesario
+# Ejecuta las pruebas unitarias SIN recompilar (ya están compiladas)
 # Genera reporte .trx y datos de cobertura de código
 - script: |
     cd server/UnitTests
-    dotnet test --configuration $(buildConfiguration) --logger trx --results-directory TestResults --collect:"XPlat Code Coverage"
+    dotnet test --no-build --configuration $(buildConfiguration) --logger trx --results-directory TestResults --collect:"XPlat Code Coverage"
   displayName: '🧪 Ejecutar pruebas unitarias'
 
 # --------------------------------------------------------------------
 # PASO 5: Ejecutar pruebas de integración
 # --------------------------------------------------------------------
-# Ejecuta las pruebas de integración compilando si es necesario
+# Ejecuta las pruebas de integración SIN recompilar
 # Genera reporte .trx y datos de cobertura de código
 - script: |
     cd server/IntegrationTest
-    dotnet test --configuration $(buildConfiguration) --logger trx --results-directory TestResults --collect:"XPlat Code Coverage"
+    dotnet test --no-build --configuration $(buildConfiguration) --logger trx --results-directory TestResults --collect:"XPlat Code Coverage"
   displayName: '🔗 Ejecutar pruebas de integración'
 
 # --------------------------------------------------------------------
@@ -82,6 +93,9 @@ steps:
 - script: |
     echo === Directorio de trabajo actual ===
     cd
+    echo.
+    echo === Estructura del directorio server ===
+    dir server /s /b | findstr /i "\.csproj \.sln"
     echo.
     echo === Contenido de server/UnitTests/TestResults ===
     dir server\UnitTests\TestResults /s 2>nul || echo No existe el directorio
@@ -148,7 +162,11 @@ steps:
 # Esto crea una versión publicable de la aplicación
 - script: |
     cd server
-    dotnet publish --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
+    if exist *.sln (
+      dotnet publish *.sln --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
+    ) else (
+      dotnet publish server/server.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
+    )
   displayName: '📦 Generar artefactos de publicación'
   condition: succeeded()
 
@@ -167,19 +185,26 @@ steps:
 # ====================================================================
 # CAMBIOS REALIZADOS EN ESTA VERSIÓN:
 # ====================================================================
-# 1. ELIMINADOS los pasos de compilación individual de proyectos de pruebas
-#    (Pasos 4 y 5 originales) porque causaban el error NETSDK1004
+# 1. AGREGADA detección automática de archivo .sln
+#    Si existe un .sln, se usa para compilar toda la solución
+#    Esto resuelve las referencias entre proyectos correctamente
 #
-# 2. MODIFICADO dotnet test para que compile automáticamente si es necesario
-#    Quitamos --no-build para evitar problemas de dependencias
+# 2. RESTAURADO el uso de --no-build en dotnet test
+#    Ahora que la compilación completa funciona, podemos usar --no-build
 #
-# 3. MEJORADO el patrón de búsqueda de archivos .trx:
-#    De: '**/UnitTests/TestResults/*.trx'
-#    A:  '**/UnitTests/TestResults/**/*.trx'
-#    Esto busca en todos los subdirectorios recursivamente
+# 3. MEJORADO el paso de DEBUG para mostrar la estructura de proyectos
+#    Ahora muestra todos los .csproj y .sln encontrados
 #
-# 4. El restore ahora incluye --verbosity normal para mejor diagnóstico
+# ====================================================================
+# SOLUCIÓN AL ERROR "Server not found":
+# ====================================================================
+# El error ocurría porque los proyectos se compilaban de forma aislada
+# sin respetar las referencias entre proyectos. Ahora:
 #
+# 1. Se compila toda la solución en un solo paso
+# 2. .NET resuelve automáticamente las dependencias entre proyectos
+# 3. Los binarios se generan en el orden correcto
+# 4. Las pruebas pueden encontrar todas las referencias necesarias
 # ====================================================================
 # NOTAS ADICIONALES:
 # ====================================================================
@@ -199,4 +224,11 @@ steps:
 #
 # 6. condition: succeededOrFailed() permite que los reportes se publiquen
 #    incluso si las pruebas fallan, para poder ver qué salió mal
+#
+# 7. Si NO tienes un archivo .sln, créalo con:
+#    dotnet new sln -n VotacionesApp
+#    dotnet sln add server/server.csproj
+#    dotnet sln add server/EleccionesUTN/EleccionesUTN.csproj
+#    dotnet sln add server/UnitTests/UnitTests.csproj
+#    dotnet sln add server/IntegrationTest/IntegrationTest.csproj
 # ====================================================================
