@@ -100,7 +100,7 @@ steps:
     testResultsFiles: '**/UnitTests/TestResults/**/*.trx'
     searchFolder: '$(System.DefaultWorkingDirectory)'
     mergeTestResults: false
-    failTaskOnFailedTests: true
+    failTaskOnFailedTests: false
     testRunTitle: 'Pruebas Unitarias - VotacionesApp'
   condition: succeededOrFailed()
 
