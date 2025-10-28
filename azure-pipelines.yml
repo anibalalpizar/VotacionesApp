@@ -67,30 +67,6 @@ steps:
   displayName: '🔗 Ejecutar pruebas de integración'
 
 # --------------------------------------------------------------------
-# PASO 6: DEBUG - Explorar estructura de archivos
-# --------------------------------------------------------------------
-- script: |
-    echo === Directorio de trabajo actual ===
-    cd
-    echo.
-    echo === Estructura del directorio server ===
-    dir server /s /b | findstr /i "\.csproj \.sln"
-    echo.
-    echo === Contenido de server/UnitTests/TestResults ===
-    dir server\UnitTests\TestResults /s 2>nul || echo No existe el directorio
-    echo.
-    echo === Contenido de server/IntegrationTest/TestResults ===
-    dir server\IntegrationTest\TestResults /s 2>nul || echo No existe el directorio
-    echo.
-    echo === Buscando TODOS los archivos .trx ===
-    where /r server *.trx 2>nul || echo No se encontraron archivos .trx
-    echo.
-    echo === Buscando TODOS los archivos de cobertura ===
-    where /r server *coverage*.xml 2>nul || echo No se encontraron archivos de cobertura
-  displayName: '🔍 DEBUG - Explorar archivos generados'
-  condition: always()
-
-# --------------------------------------------------------------------
 # PASO 7: Publicar resultados de pruebas unitarias
 # --------------------------------------------------------------------
 - task: PublishTestResults@2
