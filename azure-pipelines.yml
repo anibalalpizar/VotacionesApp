@@ -55,7 +55,7 @@ steps:
 # --------------------------------------------------------------------
 - script: |
     echo Ejecutando pruebas unitarias...
-    dotnet test server/UnitTests/UnitTests.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/UnitTests/TestResults /p:CollectCoverage=false
+    dotnet test server/UnitTests/UnitTests.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/UnitTests/TestResults
   displayName: '🧪 Ejecutar pruebas unitarias'
 
 # --------------------------------------------------------------------
@@ -63,11 +63,11 @@ steps:
 # --------------------------------------------------------------------
 - script: |
     echo Ejecutando pruebas de integración...
-    dotnet test server/IntegrationTest/IntegrationTest.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/IntegrationTest/TestResults /p:CollectCoverage=false
+    dotnet test server/IntegrationTest/IntegrationTest.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/IntegrationTest/TestResults
   displayName: '🔗 Ejecutar pruebas de integración'
 
 # --------------------------------------------------------------------
-# PASO 7: Publicar resultados de pruebas unitarias
+# PASO 6: Publicar resultados de pruebas unitarias
 # --------------------------------------------------------------------
 - task: PublishTestResults@2
   displayName: '📊 Publicar resultados de pruebas unitarias'
@@ -81,7 +81,7 @@ steps:
   condition: succeededOrFailed()
 
 # --------------------------------------------------------------------
-# PASO 8: Publicar resultados de pruebas de integración
+# PASO 7: Publicar resultados de pruebas de integración
 # --------------------------------------------------------------------
 - task: PublishTestResults@2
   displayName: '📊 Publicar resultados de pruebas de integración'
@@ -95,18 +95,7 @@ steps:
   condition: succeededOrFailed()
 
 # --------------------------------------------------------------------
-# PASO 9: Publicar cobertura de código
-# --------------------------------------------------------------------
-- task: PublishCodeCoverageResults@2
-  displayName: '📈 Publicar cobertura de código'
-  inputs:
-    codeCoverageTool: 'Cobertura'
-    summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/TestResults/**/coverage.cobertura.xml'
-    failIfCoverageEmpty: false
-  condition: succeededOrFailed()
-
-# --------------------------------------------------------------------
-# PASO 10 (OPCIONAL): Publicar artefactos de compilación
+# PASO 8 (OPCIONAL): Publicar artefactos de compilación
 # --------------------------------------------------------------------
 - script: |
     echo Publicando artefactos compilados...
@@ -115,7 +104,7 @@ steps:
   condition: succeeded()
 
 # --------------------------------------------------------------------
-# PASO 11 (OPCIONAL): Publicar artefactos en Azure Pipelines
+# PASO 9 (OPCIONAL): Publicar artefactos en Azure Pipelines
 # --------------------------------------------------------------------
 - task: PublishBuildArtifacts@1
   displayName: '☁️ Publicar artefactos en Azure DevOps'
