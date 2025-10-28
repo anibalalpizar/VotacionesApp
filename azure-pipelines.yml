@@ -45,89 +45,121 @@ steps:
   displayName: '🔄 Restaurar dependencias (NuGet packages)'
 
 # --------------------------------------------------------------------
-# PASO 3: Compilar el proyecto
+# PASO 3: Compilar TODO el proyecto (incluyendo pruebas)
 # --------------------------------------------------------------------
-# Genera la compilación del código en modo Release
-# --configuration Release: Compila con optimizaciones de producción
-# --no-restore: No restaura dependencias (ya se hizo en el paso anterior)
+# Compila toda la solución incluyendo los proyectos de pruebas
 - script: |
     cd server
     dotnet build --configuration $(buildConfiguration) --no-restore
-  displayName: '🔨 Compilar proyecto en modo $(buildConfiguration)'
+  displayName: '🔨 Compilar proyecto completo en modo $(buildConfiguration)'
 
 # --------------------------------------------------------------------
-# PASO 4: Ejecutar pruebas unitarias
+# PASO 4: Compilar proyecto de pruebas unitarias
 # --------------------------------------------------------------------
-# Ejecuta todas las pruebas del proyecto UnitTests
-# IMPORTANTE: --configuration debe coincidir con la compilación (Release)
+# Compilar explícitamente el proyecto de pruebas unitarias
 - script: |
     cd server/UnitTests
-    dotnet test --configuration $(buildConfiguration) --logger trx --collect:"XPlat Code Coverage"
+    dotnet build --configuration $(buildConfiguration) --no-restore
+  displayName: '🔨 Compilar proyecto de pruebas unitarias'
+
+# --------------------------------------------------------------------
+# PASO 5: Compilar proyecto de pruebas de integración
+# --------------------------------------------------------------------
+# Compilar explícitamente el proyecto de pruebas de integración
+- script: |
+    cd server/IntegrationTest
+    dotnet build --configuration $(buildConfiguration) --no-restore
+  displayName: '🔨 Compilar proyecto de pruebas de integración'
+
+# --------------------------------------------------------------------
+# PASO 6: Ejecutar pruebas unitarias
+# --------------------------------------------------------------------
+# Ejecuta las pruebas SIN recompilar (ya están compiladas en Release)
+- script: |
+    cd server/UnitTests
+    dotnet test --no-build --configuration $(buildConfiguration) --logger trx --results-directory TestResults --collect:"XPlat Code Coverage"
   displayName: '🧪 Ejecutar pruebas unitarias'
 
 # --------------------------------------------------------------------
-# PASO 5: Ejecutar pruebas de integración
+# PASO 7: Ejecutar pruebas de integración
 # --------------------------------------------------------------------
-# Ejecuta todas las pruebas del proyecto IntegrationTest
+# Ejecuta las pruebas SIN recompilar
 - script: |
     cd server/IntegrationTest
-    dotnet test --configuration $(buildConfiguration) --logger trx --collect:"XPlat Code Coverage"
+    dotnet test --no-build --configuration $(buildConfiguration) --logger trx --results-directory TestResults --collect:"XPlat Code Coverage"
   displayName: '🔗 Ejecutar pruebas de integración'
 
 # --------------------------------------------------------------------
-# PASO 6: DEBUG - Explorar estructura de archivos
+# PASO 8: DEBUG - Explorar estructura de archivos
 # --------------------------------------------------------------------
 - script: |
     echo === Directorio de trabajo actual ===
     cd
     echo.
-    echo === Listando carpeta server ===
-    dir server /s /b | findstr /i "TestResults trx coverage"
+    echo === Contenido de server/UnitTests/TestResults ===
+    dir server\UnitTests\TestResults /s 2>nul || echo No existe el directorio
+    echo.
+    echo === Contenido de server/IntegrationTest/TestResults ===
+    dir server\IntegrationTest\TestResults /s 2>nul || echo No existe el directorio
     echo.
     echo === Buscando TODOS los archivos .trx ===
-    where /r . *.trx 2>nul || echo No se encontraron archivos .trx
+    where /r server *.trx 2>nul || echo No se encontraron archivos .trx
     echo.
     echo === Buscando TODOS los archivos de cobertura ===
-    where /r . *coverage*.xml 2>nul || echo No se encontraron archivos de cobertura
+    where /r server *coverage*.xml 2>nul || echo No se encontraron archivos de cobertura
   displayName: '🔍 DEBUG - Explorar archivos generados'
   condition: always()
 
 # --------------------------------------------------------------------
-# PASO 7: Publicar resultados de todas las pruebas
+# PASO 9: Publicar resultados de pruebas unitarias
 # --------------------------------------------------------------------
 - task: PublishTestResults@2
-  displayName: '📊 Publicar resultados de pruebas'
+  displayName: '📊 Publicar resultados de pruebas unitarias'
   inputs:
     testResultsFormat: 'VSTest'
-    testResultsFiles: '**/*.trx'
+    testResultsFiles: '**/UnitTests/TestResults/*.trx'
     searchFolder: '$(System.DefaultWorkingDirectory)'
-    mergeTestResults: true
+    mergeTestResults: false
     failTaskOnFailedTests: true
-    testRunTitle: 'Pruebas Unitarias e Integración - VotacionesApp'
+    testRunTitle: 'Pruebas Unitarias - VotacionesApp'
   condition: succeededOrFailed()
 
 # --------------------------------------------------------------------
-# PASO 8: Publicar cobertura de código
+# PASO 10: Publicar resultados de pruebas de integración
+# --------------------------------------------------------------------
+- task: PublishTestResults@2
+  displayName: '📊 Publicar resultados de pruebas de integración'
+  inputs:
+    testResultsFormat: 'VSTest'
+    testResultsFiles: '**/IntegrationTest/TestResults/*.trx'
+    searchFolder: '$(System.DefaultWorkingDirectory)'
+    mergeTestResults: false
+    failTaskOnFailedTests: true
+    testRunTitle: 'Pruebas de Integración - VotacionesApp'
+  condition: succeededOrFailed()
+
+# --------------------------------------------------------------------
+# PASO 11: Publicar cobertura de código
 # --------------------------------------------------------------------
 - task: PublishCodeCoverageResults@2
   displayName: '📈 Publicar cobertura de código'
   inputs:
     codeCoverageTool: 'Cobertura'
-    summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.cobertura.xml'
+    summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/TestResults/**/coverage.cobertura.xml'
     failIfCoverageEmpty: false
   condition: succeededOrFailed()
 
 # --------------------------------------------------------------------
-# PASO 9 (OPCIONAL): Publicar artefactos de compilación
+# PASO 12 (OPCIONAL): Publicar artefactos de compilación
 # --------------------------------------------------------------------
 - script: |
     cd server
-    dotnet publish --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp
+    dotnet publish --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
   displayName: '📦 Generar artefactos de publicación'
   condition: succeeded()
 
 # --------------------------------------------------------------------
-# PASO 10 (OPCIONAL): Publicar artefactos en Azure Pipelines
+# PASO 13 (OPCIONAL): Publicar artefactos en Azure Pipelines
 # --------------------------------------------------------------------
 - task: PublishBuildArtifacts@1
   displayName: '☁️ Publicar artefactos en Azure DevOps'
