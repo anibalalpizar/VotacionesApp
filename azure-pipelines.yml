@@ -27,7 +27,6 @@ steps:
 # --------------------------------------------------------------------
 # PASO 1: Instalar el SDK de .NET
 # --------------------------------------------------------------------
-# Configura el entorno con la versión específica del SDK de .NET
 - task: UseDotNet@2
   displayName: '📦 Instalar .NET SDK $(dotnetVersion)'
   inputs:
@@ -38,52 +37,38 @@ steps:
 # --------------------------------------------------------------------
 # PASO 2: Restaurar dependencias de TODA la solución
 # --------------------------------------------------------------------
-# Descarga todos los paquetes NuGet necesarios para TODO el proyecto
-# Usa el archivo server.sln para restaurar toda la solución
 - script: |
-    cd server
-    dotnet restore server.sln --verbosity normal
+    echo Restaurando dependencias...
+    dotnet restore server/server.sln --verbosity normal
   displayName: '🔄 Restaurar dependencias (NuGet packages)'
 
 # --------------------------------------------------------------------
 # PASO 3: Compilar TODO el proyecto (incluyendo pruebas)
 # --------------------------------------------------------------------
-# Compila toda la solución respetando las dependencias entre proyectos
 - script: |
-    cd server
-    if exist *.sln (
-      echo Compilando solución completa...
-      dotnet build *.sln --configuration $(buildConfiguration) --no-restore
-    ) else (
-      echo Compilando todos los proyectos...
-      dotnet build --configuration $(buildConfiguration) --no-restore
-    )
+    echo Compilando solución completa...
+    dotnet build server/server.sln --configuration $(buildConfiguration) --no-restore
   displayName: '🔨 Compilar proyecto completo en modo $(buildConfiguration)'
 
 # --------------------------------------------------------------------
 # PASO 4: Ejecutar pruebas unitarias
 # --------------------------------------------------------------------
-# Ejecuta las pruebas unitarias SIN recompilar (ya están compiladas)
-# Genera reporte .trx y datos de cobertura de código
 - script: |
-    cd server/UnitTests
-    dotnet test --no-build --configuration $(buildConfiguration) --logger trx --results-directory TestResults --collect:"XPlat Code Coverage"
+    echo Ejecutando pruebas unitarias...
+    dotnet test server/UnitTests/UnitTests.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/UnitTests/TestResults --collect:"XPlat Code Coverage"
   displayName: '🧪 Ejecutar pruebas unitarias'
 
 # --------------------------------------------------------------------
 # PASO 5: Ejecutar pruebas de integración
 # --------------------------------------------------------------------
-# Ejecuta las pruebas de integración SIN recompilar
-# Genera reporte .trx y datos de cobertura de código
 - script: |
-    cd server/IntegrationTest
-    dotnet test --no-build --configuration $(buildConfiguration) --logger trx --results-directory TestResults --collect:"XPlat Code Coverage"
+    echo Ejecutando pruebas de integración...
+    dotnet test server/IntegrationTest/IntegrationTest.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/IntegrationTest/TestResults --collect:"XPlat Code Coverage"
   displayName: '🔗 Ejecutar pruebas de integración'
 
 # --------------------------------------------------------------------
 # PASO 6: DEBUG - Explorar estructura de archivos
 # --------------------------------------------------------------------
-# Este paso ayuda a diagnosticar problemas mostrando qué archivos se generaron
 - script: |
     echo === Directorio de trabajo actual ===
     cd
@@ -108,8 +93,6 @@ steps:
 # --------------------------------------------------------------------
 # PASO 7: Publicar resultados de pruebas unitarias
 # --------------------------------------------------------------------
-# Publica los resultados de las pruebas unitarias en Azure DevOps
-# Estos se pueden visualizar en la pestaña "Tests" del pipeline
 - task: PublishTestResults@2
   displayName: '📊 Publicar resultados de pruebas unitarias'
   inputs:
@@ -124,7 +107,6 @@ steps:
 # --------------------------------------------------------------------
 # PASO 8: Publicar resultados de pruebas de integración
 # --------------------------------------------------------------------
-# Publica los resultados de las pruebas de integración en Azure DevOps
 - task: PublishTestResults@2
   displayName: '📊 Publicar resultados de pruebas de integración'
   inputs:
@@ -139,8 +121,6 @@ steps:
 # --------------------------------------------------------------------
 # PASO 9: Publicar cobertura de código
 # --------------------------------------------------------------------
-# Publica los reportes de cobertura de código en Azure DevOps
-# Esto permite visualizar qué porcentaje del código está cubierto por pruebas
 - task: PublishCodeCoverageResults@2
   displayName: '📈 Publicar cobertura de código'
   inputs:
@@ -152,22 +132,15 @@ steps:
 # --------------------------------------------------------------------
 # PASO 10 (OPCIONAL): Publicar artefactos de compilación
 # --------------------------------------------------------------------
-# Genera los archivos binarios listos para despliegue
-# Esto crea una versión publicable de la aplicación
 - script: |
-    cd server
-    if exist *.sln (
-      dotnet publish *.sln --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
-    ) else (
-      dotnet publish server/server.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
-    )
+    echo Publicando artefactos compilados...
+    dotnet publish server/server.sln --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
   displayName: '📦 Generar artefactos de publicación'
   condition: succeeded()
 
 # --------------------------------------------------------------------
 # PASO 11 (OPCIONAL): Publicar artefactos en Azure Pipelines
 # --------------------------------------------------------------------
-# Sube los artefactos generados a Azure DevOps para su descarga o despliegue
 - task: PublishBuildArtifacts@1
   displayName: '☁️ Publicar artefactos en Azure DevOps'
   inputs:
