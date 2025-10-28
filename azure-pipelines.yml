@@ -59,7 +59,6 @@ steps:
 # PASO 4: Ejecutar pruebas unitarias
 # --------------------------------------------------------------------
 # Ejecuta todas las pruebas del proyecto UnitTests
-# Los resultados se guardan automáticamente en TestResults dentro del proyecto
 - script: |
     cd server/UnitTests
     dotnet test --no-build --configuration $(buildConfiguration) --verbosity normal --logger trx --collect:"XPlat Code Coverage"
@@ -75,39 +74,36 @@ steps:
   displayName: '🔗 Ejecutar pruebas de integración'
 
 # --------------------------------------------------------------------
-# PASO 6: Publicar resultados de pruebas unitarias
+# PASO 6: DEBUG - Listar archivos .trx generados
 # --------------------------------------------------------------------
-# Publica los resultados de las pruebas unitarias en Azure DevOps
-- task: PublishTestResults@2
-  displayName: '📊 Publicar resultados de pruebas unitarias'
-  inputs:
-    testResultsFormat: 'VSTest'
-    testResultsFiles: '**/UnitTests/TestResults/**/*.trx'
-    searchFolder: '$(System.DefaultWorkingDirectory)'
-    mergeTestResults: false
-    failTaskOnFailedTests: true
-    testRunTitle: 'Pruebas Unitarias - VotacionesApp'
-  condition: succeededOrFailed()
+# Este paso ayuda a identificar dónde se están guardando los archivos de pruebas
+- script: |
+    echo "=== Buscando archivos .trx en el workspace ==="
+    dir /s /b $(System.DefaultWorkingDirectory)\*.trx
+    echo "=== Buscando archivos de cobertura ==="
+    dir /s /b $(System.DefaultWorkingDirectory)\*coverage*.xml
+  displayName: '🔍 DEBUG - Listar archivos de pruebas y cobertura'
+  condition: always()
 
 # --------------------------------------------------------------------
-# PASO 7: Publicar resultados de pruebas de integración
+# PASO 7: Publicar resultados de todas las pruebas
 # --------------------------------------------------------------------
-# Publica los resultados de las pruebas de integración en Azure DevOps
+# Publica todos los archivos .trx encontrados
 - task: PublishTestResults@2
-  displayName: '📊 Publicar resultados de pruebas de integración'
+  displayName: '📊 Publicar resultados de pruebas'
   inputs:
     testResultsFormat: 'VSTest'
-    testResultsFiles: '**/IntegrationTest/TestResults/**/*.trx'
+    testResultsFiles: '**/*.trx'
     searchFolder: '$(System.DefaultWorkingDirectory)'
-    mergeTestResults: false
+    mergeTestResults: true
     failTaskOnFailedTests: true
-    testRunTitle: 'Pruebas de Integración - VotacionesApp'
+    testRunTitle: 'Pruebas Unitarias e Integración - VotacionesApp'
   condition: succeededOrFailed()
 
 # --------------------------------------------------------------------
 # PASO 8: Publicar cobertura de código
 # --------------------------------------------------------------------
-# Publica los reportes de cobertura de código en Azure DevOps
+# Publica los reportes de cobertura de código
 - task: PublishCodeCoverageResults@2
   displayName: '📈 Publicar cobertura de código'
   inputs:
