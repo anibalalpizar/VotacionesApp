@@ -59,9 +59,10 @@ steps:
 # PASO 4: Ejecutar pruebas unitarias
 # --------------------------------------------------------------------
 # Ejecuta todas las pruebas del proyecto UnitTests
+# IMPORTANTE: --configuration debe coincidir con la compilación (Release)
 - script: |
     cd server/UnitTests
-    dotnet test --no-build --configuration $(buildConfiguration) --verbosity normal --logger trx --collect:"XPlat Code Coverage"
+    dotnet test --configuration $(buildConfiguration) --logger trx --collect:"XPlat Code Coverage"
   displayName: '🧪 Ejecutar pruebas unitarias'
 
 # --------------------------------------------------------------------
@@ -70,25 +71,30 @@ steps:
 # Ejecuta todas las pruebas del proyecto IntegrationTest
 - script: |
     cd server/IntegrationTest
-    dotnet test --no-build --configuration $(buildConfiguration) --verbosity normal --logger trx --collect:"XPlat Code Coverage"
+    dotnet test --configuration $(buildConfiguration) --logger trx --collect:"XPlat Code Coverage"
   displayName: '🔗 Ejecutar pruebas de integración'
 
 # --------------------------------------------------------------------
-# PASO 6: DEBUG - Listar archivos .trx generados
+# PASO 6: DEBUG - Explorar estructura de archivos
 # --------------------------------------------------------------------
-# Este paso ayuda a identificar dónde se están guardando los archivos de pruebas
 - script: |
-    echo "=== Buscando archivos .trx en el workspace ==="
-    dir /s /b $(System.DefaultWorkingDirectory)\*.trx
-    echo "=== Buscando archivos de cobertura ==="
-    dir /s /b $(System.DefaultWorkingDirectory)\*coverage*.xml
-  displayName: '🔍 DEBUG - Listar archivos de pruebas y cobertura'
+    echo === Directorio de trabajo actual ===
+    cd
+    echo.
+    echo === Listando carpeta server ===
+    dir server /s /b | findstr /i "TestResults trx coverage"
+    echo.
+    echo === Buscando TODOS los archivos .trx ===
+    where /r . *.trx 2>nul || echo No se encontraron archivos .trx
+    echo.
+    echo === Buscando TODOS los archivos de cobertura ===
+    where /r . *coverage*.xml 2>nul || echo No se encontraron archivos de cobertura
+  displayName: '🔍 DEBUG - Explorar archivos generados'
   condition: always()
 
 # --------------------------------------------------------------------
 # PASO 7: Publicar resultados de todas las pruebas
 # --------------------------------------------------------------------
-# Publica todos los archivos .trx encontrados
 - task: PublishTestResults@2
   displayName: '📊 Publicar resultados de pruebas'
   inputs:
@@ -103,7 +109,6 @@ steps:
 # --------------------------------------------------------------------
 # PASO 8: Publicar cobertura de código
 # --------------------------------------------------------------------
-# Publica los reportes de cobertura de código
 - task: PublishCodeCoverageResults@2
   displayName: '📈 Publicar cobertura de código'
   inputs:
@@ -115,17 +120,15 @@ steps:
 # --------------------------------------------------------------------
 # PASO 9 (OPCIONAL): Publicar artefactos de compilación
 # --------------------------------------------------------------------
-# Genera un artefacto con los binarios compilados del proyecto
 - script: |
     cd server
-    dotnet publish --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
+    dotnet publish --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp
   displayName: '📦 Generar artefactos de publicación'
   condition: succeeded()
 
 # --------------------------------------------------------------------
 # PASO 10 (OPCIONAL): Publicar artefactos en Azure Pipelines
 # --------------------------------------------------------------------
-# Sube los artefactos generados a Azure DevOps
 - task: PublishBuildArtifacts@1
   displayName: '☁️ Publicar artefactos en Azure DevOps'
   inputs:
