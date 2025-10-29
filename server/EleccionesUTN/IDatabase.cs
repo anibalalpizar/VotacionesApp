@@ -18,7 +18,7 @@ namespace EleccionesUTN
 
         void RegisrarElecciones(string nombreEleccion, DateTime fechaInicio, DateTime fechaFin, string status, int candidateCount, int voteCount, bool isActive);
 
-        string GetVotante(string identificacion);
+        int GetVotante(string identificacion);
         int GetEleccion(int idEleccion);
     }
 }

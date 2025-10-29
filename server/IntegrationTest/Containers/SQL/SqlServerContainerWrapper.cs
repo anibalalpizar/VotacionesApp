@@ -1,5 +1,6 @@
 ﻿using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using EleccionesUTN;
 using Microsoft.Data.SqlClient;
 using Renci.SshNet;
 using System;
@@ -11,6 +12,8 @@ namespace IntegrationTest
     {
         private readonly IContainer _dbContainer;
         private string _connectionString = string.Empty;
+
+        private readonly SqlServerContainerWrapper _db;
 
         public SqlServerContainerWrapper()
         {
@@ -40,13 +43,13 @@ namespace IntegrationTest
             await con.OpenAsync();
 
             // Ejecuta scripts de creación de base de datos, tablas y seed (igual que en tu Postgres)
-            await using (var cmd = new SqlCommand(Scripts.DDL, con))
+            await using (var cmd = new SqlCommand(ScriptsQLS.DDL, con))
                 await cmd.ExecuteNonQueryAsync();
 
-            await using (var cmd = new SqlCommand(Scripts.Seed, con))
+            await using (var cmd = new SqlCommand(ScriptsQLS.Seed, con))
                 await cmd.ExecuteNonQueryAsync();
 
-            await using (var cmd = new SqlCommand(Scripts.users, con))
+            await using (var cmd = new SqlCommand(ScriptsQLS.Users, con))
                 await cmd.ExecuteNonQueryAsync();
         }
 

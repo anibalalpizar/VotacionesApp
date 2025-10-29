@@ -12,9 +12,9 @@ namespace IntegrationTest
         /// Crea la tabla Users según el esquema real de SQL Server
         /// </summary>
         internal const string Users = """
-            DROP TABLE IF EXISTS "Users";
+            DROP TABLE IF EXISTS "users";
 
-            CREATE TABLE "Users" (
+            CREATE TABLE "users" (
                 "UserId" SERIAL PRIMARY KEY,
                 "Identification" VARCHAR(20) NOT NULL UNIQUE,
                 "FullName" VARCHAR(100) NOT NULL,
@@ -72,7 +72,7 @@ namespace IntegrationTest
                 CONSTRAINT "FK_Votes_Elections" FOREIGN KEY("ElectionId") 
                     REFERENCES "Elections"("ElectionId"),
                 CONSTRAINT "FK_Votes_Voters" FOREIGN KEY("VoterId") 
-                    REFERENCES "Users"("UserId"),
+                    REFERENCES "users"("UserId"),
                 CONSTRAINT "FK_Votes_Candidates" FOREIGN KEY("CandidateId") 
                     REFERENCES "Candidates"("CandidateId"),
                 CONSTRAINT "UQ_Vote" UNIQUE ("ElectionId", "VoterId")
@@ -92,7 +92,7 @@ namespace IntegrationTest
                 "Timestamp" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 "Details" VARCHAR(255),
                 CONSTRAINT "FK_AuditLog_Users" FOREIGN KEY("UserId") 
-                    REFERENCES "Users"("UserId")
+                    REFERENCES "users"("UserId")
             );
         """;
 
@@ -101,7 +101,7 @@ namespace IntegrationTest
         /// </summary>
         internal const string Seed = """
             -- Insertar usuarios de prueba
-            INSERT INTO "Users"("Identification", "FullName", "Email", "PasswordHash", "Role")
+            INSERT INTO "users"("Identification", "FullName", "Email", "PasswordHash", "Role")
             VALUES 
                 ('101', 'Dennis Ritchie', 'dennis@example.com', NULL, 'Voter'),
                 ('102', 'Bjorn Stroustrup', 'bjorn@example.com', NULL, 'Voter'),
@@ -148,6 +148,22 @@ namespace IntegrationTest
               candidato_votado_id  INT NULL REFERENCES candidatos(id),
               fecha_voto           TIMESTAMP NULL
             );
+
+            DROP TABLE IF EXISTS votos;
+
+            CREATE TABLE "votos"(
+                id SERIAL PRIMARY KEY,
+                "voterId" int NOT NULL,
+                "candidateId" int NOT NULL,
+                "electionid" int NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            INSERT INTO "votos"("electionid", "voterId", "candidateId")
+            VALUES (1, 101, 1); -- Bjorn votó por Mr. Anderson
+
+            INSERT INTO "votos"("electionid", "voterId", "candidateId")
+            VALUES (1, 103, 1); -- Bjorn votó por Mr. Anderson
         """;
 
         /// <summary>
@@ -175,6 +191,13 @@ namespace IntegrationTest
                 electionid int NOT NULL,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+
+            -- Insertar un voto de prueba
+            INSERT INTO votos("electionid", "voterId", "candidateId")
+            VALUES (1, 101, 1); -- Bjorn votó por Mr. Anderson
+
+            INSERT INTO votos("electionid", "voterId", "candidateId")
+            VALUES (1, 103, 1); -- Bjorn votó por Mr. Anderson
         """;
 
     }

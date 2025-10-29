@@ -24,14 +24,13 @@ namespace EleccionesUTN
             using var con = new NpgsqlConnection(_connectionString);
             con.OpenAsync();
 
-            using (var upd = new NpgsqlCommand(@"INSERT INTO ""votos"" (""candidateid"", ""voterid"", ""electionid"")
-                                                 VALUES (@cid, @vid, 1);   
-                                                 WHERE voteId = 1;", con))
+            using (var upd = new NpgsqlCommand(@"INSERT INTO ""votos"" (""candidateId"", ""voterId"", ""electionid"")
+                                                 VALUES (@cid, @vid, 1);", con))
             {
 
 
                 upd.Parameters.AddWithValue("cid", candidatoId);
-                upd.Parameters.AddWithValue("vid", cedulaVotante);
+                upd.Parameters.AddWithValue("vid", Convert.ToInt32(cedulaVotante));
                 upd.ExecuteNonQuery();
             }
         }
@@ -73,15 +72,16 @@ namespace EleccionesUTN
             using var con = new NpgsqlConnection(_connectionString);
             con.OpenAsync();
 
-            using (var sqlCmd = new NpgsqlCommand("select voterId from votos where voterId=@vid and electionid=@;", con))
+            using (var sqlCmd = new NpgsqlCommand(@"select ""voterId"" from ""votos"" where ""voterId""=@vid and ""electionid""=id;", con))
             {
-                sqlCmd.Parameters.AddWithValue("vid", cedulaVotante);
+                sqlCmd.Parameters.AddWithValue("vid", Convert.ToInt32(cedulaVotante));
+                sqlCmd.Parameters.AddWithValue("id", 1);
                 var r = sqlCmd.ExecuteScalar();
 
                 if (r is null)
-                    throw new Exceptions.NotFoundException("Votante", cedulaVotante.ToString());
-
-                return (bool)r;
+                    r = false;
+                else r = true;
+                    return (bool)r;
             }
         }
 
@@ -92,7 +92,7 @@ namespace EleccionesUTN
 
             const string query = @"
                 SELECT COUNT(*) 
-                FROM ""Users"" 
+                FROM ""users"" 
                 WHERE ""Identification"" = @iden AND ""PasswordHash"" = @pass;
             ";
 
@@ -128,7 +128,7 @@ namespace EleccionesUTN
             };
 
             using var cmd = new NpgsqlCommand(@"
-                INSERT INTO ""Users"" (""Identification"", ""FullName"", ""Email"", ""PasswordHash"", ""Role"")
+                INSERT INTO ""users"" (""Identification"", ""FullName"", ""Email"", ""PasswordHash"", ""Role"")
                 VALUES (@ident, @name, @email, @pass, @role);
             ", con);
 
@@ -169,7 +169,7 @@ namespace EleccionesUTN
             using var con = new NpgsqlConnection(_connectionString);
             con.OpenAsync();
 
-            using (var sqlCmd = new NpgsqlCommand("select id from elecciones where id=@elecc;", con))
+            using (var sqlCmd = new NpgsqlCommand("select \"ElectionId\" from \"Elections\" where \"ElectionId\"=@elecc;", con))
             {
                 sqlCmd.Parameters.AddWithValue("elecc", eleccion);
                 var id = sqlCmd.ExecuteScalar();
@@ -181,12 +181,12 @@ namespace EleccionesUTN
             }
         }
 
-        public string GetVotante(string identificacion)
+        public int GetVotante(string identificacion)
         {
             using var con = new NpgsqlConnection(_connectionString);
             con.OpenAsync();
 
-            using (var sqlCmd = new NpgsqlCommand("select id from Users where Identification=@id;", con))
+            using (var sqlCmd = new NpgsqlCommand("select \"UserId\" from users where \"Identification\" = @id;", con))
             {
                 sqlCmd.Parameters.AddWithValue("id", identificacion);
                 var id = sqlCmd.ExecuteScalar();
@@ -194,7 +194,7 @@ namespace EleccionesUTN
                 if (id is null)
                     throw new Exceptions.NotFoundException("Votante", identificacion.ToString());
 
-                return (string)id;
+                return (int)id;
             }
         }
     }

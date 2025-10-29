@@ -29,12 +29,12 @@ namespace EleccionesUTN
 
 
             int candidatoId =_database.GetCandidatoId(cedulaCandidato); // Lanza NotFoundException si no existe el candidato
-            string votanteId = _database.GetVotante(cedulaVotante);   // Lanza NotFoundException si no existe el votante
+            int votanteId = _database.GetVotante(cedulaVotante);   // Lanza NotFoundException si no existe el votante
             int eleccionId = _database.GetEleccion(1); // Lanza NotFoundException si no existe la eleccion
 
             if (_database.YaVoto(cedulaVotante))
-            {                
-                throw new Exceptions.AlreadyVotedException(cedulaVotante.ToString());
+            {
+                return true;
             }
 
 

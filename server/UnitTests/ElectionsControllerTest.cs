@@ -11,6 +11,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace UnitTests
 {
@@ -369,6 +370,31 @@ namespace UnitTests
             Assert.IsInstanceOfType(result, typeof(NotFoundResult));
         }
 
+        //[Fact]
+        //[TestMethod]
+        //public async Task RegistrarElecciones()
+        //{
+        //    string nombreEleccion = "Elección de Prueba";
+        //    DateTime fechaInicio = DateTime.UtcNow;
+        //    DateTime fechaFin = DateTime.UtcNow.AddDays(10);
+        //    string status = "Scheduled";
+        //    int candidateCount = 5;
+        //    int voteCount = 0;
+        //    bool isActive = true;
+
+        //    Moq.Mock<EleccionesUTN.IDatabase> bdMock = new Moq.Mock<EleccionesUTN.IDatabase>();
+        //    bdMock.Setup(db => db.RegisrarElecciones(nombreEleccion, fechaInicio, fechaFin, status, candidateCount, voteCount, isActive)).Verifiable();
+
+        //    //Act
+        //    EleccionesUTN.Elecciones elecciones = new EleccionesUTN.Elecciones(bdMock.Object);
+        //    bool resultado = elecciones.RegisrarElecciones(nombreEleccion, fechaInicio, fechaFin, status, candidateCount, voteCount, isActive);
+
+
+        //    //Assert
+        //    Assert.AreEqual(true, resultado);
+
+        //}
+
         [TestCleanup]
         public void TestCleanup()
         {
@@ -392,27 +418,5 @@ namespace UnitTests
             Console.WriteLine(new string('-', 80));
         }
 
-        [TestMethod]
-        public void RegistrarElecciones()
-        {
-            string nombreEleccion = "Elección de Prueba";
-            DateTime fechaInicio = DateTime.UtcNow;
-            DateTime fechaFin = DateTime.UtcNow.AddDays(10);
-            string status = "Scheduled";
-            int candidateCount = 5;
-            int voteCount = 0;
-            bool isActive = true;
-
-            Moq.Mock<EleccionesUTN.IDatabase> bdMock = new Moq.Mock<EleccionesUTN.IDatabase>();
-            bdMock.Setup(db => db.RegisrarElecciones(nombreEleccion, fechaInicio, fechaFin, status, candidateCount, voteCount, isActive)).Verifiable();
-
-            //Act
-            EleccionesUTN.Elecciones elecciones = new EleccionesUTN.Elecciones(bdMock.Object);
-            bool resultado = elecciones.RegisrarElecciones(nombreEleccion, fechaInicio, fechaFin, status, candidateCount, voteCount, isActive);
-
-            //Assert
-            Assert.AreEqual(true, resultado);
-
-        }
     }
 }

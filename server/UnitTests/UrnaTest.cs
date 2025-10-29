@@ -15,8 +15,8 @@ namespace UnitTests
         public void RegistrarVotoValida_RetornaTrue_Test()
         {
             //Arrange
-            string cedulaVotante = "101"; // Dennis Ritchie que no ha votado
-            string cedulaCandidato = "902"; // Morpheus, candidato válido
+            string cedulaVotante = "2"; // 
+            string cedulaCandidato = "902"; //
             const bool EXPECTED_TRUE = true;
 
             Moq.Mock<EleccionesUTN.IDatabase> bdMock = new Moq.Mock<EleccionesUTN.IDatabase>();

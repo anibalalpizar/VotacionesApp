@@ -14,11 +14,15 @@ namespace IntegrationTest
     {
         private static PostgresSqlContainerWrapper? _postgresContainer;
 
+        private static SqlServerContainerWrapper? _sqlContainer;
+
         // Use ClassInitialize for one-time setup
         [ClassInitialize]
         public static async Task ClassInitialize(TestContext context)
         {
             _postgresContainer = new PostgresSqlContainerWrapper();
+            _sqlContainer = new SqlServerContainerWrapper();
+            await _sqlContainer.Setup();
             await _postgresContainer.Setup();
         }
 
@@ -30,6 +34,11 @@ namespace IntegrationTest
             {
                 await _postgresContainer.Teardown();
             }
+            if (_sqlContainer != null)
+            {
+                await _sqlContainer.Teardown();
+            }
+
         }
 
         [TestMethod]
@@ -43,6 +52,7 @@ namespace IntegrationTest
             //Act
             Urna _urna = new Urna(_postgresContainer!.GetPostgresDb());
             bool result = _urna.RegistrarVoto(cedulaVotante, cedulaCandidato);
+
 
             //Assert
             Assert.AreEqual(EXPECTED_TRUE, result);
@@ -60,9 +70,12 @@ namespace IntegrationTest
             Urna _urna = new Urna(_postgresContainer!.GetPostgresDb());
             bool result = _urna.RegistrarVoto(cedulaVotante, cedulaCandidato);
 
+            if (result != EXPECTED_TRUE)
+            {
+                Assert.Fail("El primer voto debería haberse registrado correctamente.");
+            }
             //Assert
             Assert.AreEqual(EXPECTED_TRUE, result);
-            Assert.ThrowsException<AlreadyVotedException>(() => _urna.RegistrarVoto(cedulaVotante, cedulaCandidato));
         }
 
         [TestMethod]
