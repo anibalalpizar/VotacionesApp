@@ -1,113 +1,81 @@
-# ====================================================================
-# Pipeline de Integración Continua (CI) para VotacionesApp
-# Curso: ISW-1411 Calidad del Software
-# Plataforma: Azure DevOps
-# Framework: .NET 8.x
-# ====================================================================
-
-# Trigger: El pipeline se ejecuta automáticamente después de cada commit (push) a la rama main
 trigger:
   - main
 
-# Pool: Define el agente de ejecución donde se ejecutará el pipeline
-# Usando agente local self-hosted
 pool:
   name: 'LocalPool'
 
-# Variables globales del pipeline
 variables:
-  buildConfiguration: 'Release'  # Compilación en modo Release (optimizado para producción)
-  dotnetVersion: '8.x'           # Versión del SDK de .NET a utilizar
+  buildConfiguration: 'Release'
+  dotnetVersion: '8.x'
 
-# ====================================================================
-# STEPS: Pasos secuenciales del pipeline CI
-# ====================================================================
 steps:
 
-# --------------------------------------------------------------------
-# PASO 1: Instalar el SDK de .NET
-# --------------------------------------------------------------------
+# Install .NET SDK
 - task: UseDotNet@2
-  displayName: '📦 Instalar .NET SDK $(dotnetVersion)'
+  displayName: 'Install .NET SDK $(dotnetVersion)'
   inputs:
     packageType: 'sdk'
     version: '$(dotnetVersion)'
     installationPath: $(Agent.ToolsDirectory)/dotnet
 
-# --------------------------------------------------------------------
-# PASO 2: Restaurar dependencias de TODA la solución
-# --------------------------------------------------------------------
+# Restore dependencies
 - script: |
-    echo Restaurando dependencias...
+    echo Restoring dependencies...
     dotnet restore server/server.sln --verbosity normal
-  displayName: '🔄 Restaurar dependencias (NuGet packages)'
+  displayName: 'Restore NuGet packages'
 
-# --------------------------------------------------------------------
-# PASO 3: Compilar TODO el proyecto (incluyendo pruebas)
-# --------------------------------------------------------------------
+# Build solution
 - script: |
-    echo Compilando solución completa...
+    echo Building solution...
     dotnet build server/server.sln --configuration $(buildConfiguration) --no-restore
-  displayName: '🔨 Compilar proyecto completo en modo $(buildConfiguration)'
+  displayName: 'Build solution in $(buildConfiguration) mode'
 
-# --------------------------------------------------------------------
-# PASO 4: Ejecutar pruebas unitarias
-# --------------------------------------------------------------------
+# Run unit tests
 - script: |
-    echo Ejecutando pruebas unitarias...
+    echo Running unit tests...
     dotnet test server/UnitTests/UnitTests.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/UnitTests/TestResults
-  displayName: '🧪 Ejecutar pruebas unitarias'
+  displayName: 'Run unit tests'
 
-# --------------------------------------------------------------------
-# PASO 5: Ejecutar pruebas de integración
-# --------------------------------------------------------------------
+# Run integration tests
 - script: |
-    echo Ejecutando pruebas de integración...
+    echo Running integration tests...
     dotnet test server/IntegrationTest/IntegrationTest.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/IntegrationTest/TestResults
-  displayName: '🔗 Ejecutar pruebas de integración'
+  displayName: 'Run integration tests'
 
-# --------------------------------------------------------------------
-# PASO 6: Publicar resultados de pruebas unitarias
-# --------------------------------------------------------------------
+# Publish unit test results
 - task: PublishTestResults@2
-  displayName: '📊 Publicar resultados de pruebas unitarias'
+  displayName: 'Publish unit test results'
   inputs:
     testResultsFormat: 'VSTest'
     testResultsFiles: '**/UnitTests/TestResults/**/*.trx'
     searchFolder: '$(System.DefaultWorkingDirectory)'
     mergeTestResults: false
     failTaskOnFailedTests: false
-    testRunTitle: 'Pruebas Unitarias - VotacionesApp'
+    testRunTitle: 'Unit Tests - VotacionesApp'
   condition: succeededOrFailed()
 
-# --------------------------------------------------------------------
-# PASO 7: Publicar resultados de pruebas de integración
-# --------------------------------------------------------------------
+# Publish integration test results
 - task: PublishTestResults@2
-  displayName: '📊 Publicar resultados de pruebas de integración'
+  displayName: 'Publish integration test results'
   inputs:
     testResultsFormat: 'VSTest'
     testResultsFiles: '**/IntegrationTest/TestResults/**/*.trx'
     searchFolder: '$(System.DefaultWorkingDirectory)'
     mergeTestResults: false
     failTaskOnFailedTests: true
-    testRunTitle: 'Pruebas de Integración - VotacionesApp'
+    testRunTitle: 'Integration Tests - VotacionesApp'
   condition: succeededOrFailed()
 
-# --------------------------------------------------------------------
-# PASO 8 (OPCIONAL): Publicar artefactos de compilación
-# --------------------------------------------------------------------
+# Generate build artifacts (optional)
 - script: |
-    echo Publicando artefactos compilados...
+    echo Generating artifacts...
     dotnet publish server/server.sln --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
-  displayName: '📦 Generar artefactos de publicación'
+  displayName: 'Generate build artifacts'
   condition: succeeded()
 
-# --------------------------------------------------------------------
-# PASO 9 (OPCIONAL): Publicar artefactos en Azure Pipelines
-# --------------------------------------------------------------------
+# Publish artifacts to Azure DevOps (optional)
 - task: PublishBuildArtifacts@1
-  displayName: '☁️ Publicar artefactos en Azure DevOps'
+  displayName: 'Publish artifacts to Azure DevOps'
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)/VotacionesApp'
     ArtifactName: 'VotacionesApp-$(Build.BuildId)'
