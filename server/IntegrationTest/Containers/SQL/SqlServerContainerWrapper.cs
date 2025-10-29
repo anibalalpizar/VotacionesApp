@@ -33,24 +33,40 @@ namespace IntegrationTest
         internal async Task Setup()
         {
             await _dbContainer.StartAsync();
-
             var host = _dbContainer.Hostname;
             var port = _dbContainer.GetMappedPublicPort(1433);
-
             _connectionString = $"Server={host},{port};User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;Encrypt=False;";
 
             await using var con = new SqlConnection(_connectionString);
             await con.OpenAsync();
 
-            // Ejecuta scripts de creación de base de datos, tablas y seed (igual que en tu Postgres)
-            await using (var cmd = new SqlCommand(ScriptsQLS.DDL, con))
+            await using (var cmd = new SqlCommand(ScriptsQLS.Users, con))
+                await cmd.ExecuteNonQueryAsync();
+
+            await using (var cmd = new SqlCommand(ScriptsQLS.Elections, con))
+                await cmd.ExecuteNonQueryAsync();
+
+            await using (var cmd = new SqlCommand(ScriptsQLS.Candidates, con))
+                await cmd.ExecuteNonQueryAsync();
+
+            await using (var cmd = new SqlCommand(ScriptsQLS.Votes, con))
+                await cmd.ExecuteNonQueryAsync();
+
+            await using (var cmd = new SqlCommand(ScriptsQLS.AuditLog, con))
                 await cmd.ExecuteNonQueryAsync();
 
             await using (var cmd = new SqlCommand(ScriptsQLS.Seed, con))
                 await cmd.ExecuteNonQueryAsync();
 
-            await using (var cmd = new SqlCommand(ScriptsQLS.Users, con))
+            await using (var cmd = new SqlCommand(ScriptsQLS.DDL, con))
                 await cmd.ExecuteNonQueryAsync();
+
+            await using (var cmd = new SqlCommand(ScriptsQLS.SeedLegacy, con))
+                await cmd.ExecuteNonQueryAsync();
+
+            await using (var cmd = new SqlCommand(ScriptsQLS.votes, con))
+                await cmd.ExecuteNonQueryAsync();
+        }
         }
 
         /// <summary>
