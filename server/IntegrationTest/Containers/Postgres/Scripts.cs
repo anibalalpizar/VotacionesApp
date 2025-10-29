@@ -199,6 +199,5 @@ namespace IntegrationTest
             INSERT INTO votos("electionid", "voterId", "candidateId")
             VALUES (1, 103, 1); -- Bjorn votó por Mr. Anderson
         """;
-
     }
 }
