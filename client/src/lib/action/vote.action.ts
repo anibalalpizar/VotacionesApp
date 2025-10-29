@@ -119,7 +119,6 @@ export async function castVoteAction(data: CastVoteRequest) {
       data: result,
     }
   } catch (error) {
-    console.error("Error casting vote:", error)
     return {
       success: false,
       message: "Error de conexión. Verifique su conexión a internet.",

@@ -146,7 +146,6 @@ export function VoteConfirmation() {
         }
       }
     } catch (error) {
-      console.error("Error submitting vote:", error)
       toast.error("Error de conexión al registrar el voto")
     } finally {
       setIsSubmitting(false)

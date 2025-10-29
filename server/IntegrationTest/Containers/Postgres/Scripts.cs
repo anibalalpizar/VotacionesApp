@@ -9,59 +9,9 @@ namespace IntegrationTest
     internal struct Scripts
     {
         /// <summary>
-        /// Contains the Data Definition Language (DDL) script for managing the database schema of the voting system,
-        /// including tables for candidates and voters.
+        /// Crea la tabla Users según el esquema real de SQL Server
         /// </summary>
-        /// <remarks>This DDL script defines the structure of two tables: <list type="bullet"> <item>
-        /// <description> <c>candidatos</c>: Stores information about candidates, including a unique identifier
-        /// (<c>id</c>) and the candidate's name (<c>nombre</c>). </description> </item> <item> <description>
-        /// <c>votantes</c>: Stores information about voters, including a unique identifier (<c>id</c>), the voter's
-        /// name (<c>nombre</c>), their unique identification number (<c>cedula</c>), whether they have voted
-        /// (<c>ya_voto</c>), the ID of the candidate they voted for (<c>candidato_votado_id</c>, referencing
-        /// <c>candidatos</c>), and the timestamp of their vote (<c>fecha_voto</c>). </description> </item> </list> The
-        /// script also includes logic to drop the tables if they already exist before creating them.</remarks>
-        internal const string DDL = """
-            drop table if exists votantes;
-            drop table if exists candidatos;
-
-            create table candidatos(
-              id     serial primary key,
-              cedula               text not null unique,
-              nombre text not null
-            );
-
-            create table votantes(
-              id                   serial primary key,
-              nombre               text not null,
-              cedula               text not null unique,
-              ya_voto              boolean not null default false,
-              candidato_votado_id  int null references candidatos(id),
-              fecha_voto           timestamp null
-            );
-        """;
-
-
-        /// <summary>
-        /// Represents the SQL seed data used to initialize the database with default values for candidates and voters.
-        /// </summary>
-        /// <remarks>This constant contains SQL statements that insert predefined data into the
-        /// "candidatos" and "votantes" tables. It is intended for internal use to populate the database during setup or
-        /// testing.</remarks>
-        internal const string Seed = """
-            insert into candidatos(cedula, nombre) 
-            values 
-                ('901','Mr.Anderson.'), 
-                ('902','Morpheus');
-
-
-            insert into votantes(nombre, cedula, ya_voto, candidato_votado_id)
-            values
-              ('Dennis Ritchie',  '101', false, null),   -- aún no ha votado
-              ('Bjorn Stroustrup', '102', true,  1),      -- ya votó por Ana
-              ('Richard Stallman',   '103', false, null);   -- aún no ha votado
-        """;
-
-        internal const string users = """
+        internal const string Users = """
             DROP TABLE IF EXISTS "Users";
 
             CREATE TABLE "Users" (
@@ -76,20 +26,145 @@ namespace IntegrationTest
             );
         """;
 
-        internal const string elections = """
-            DROP TABLE IF EXISTS elecciones;
-            CREATE TABLE elecciones(
-                id SERIAL PRIMARY KEY,
-                nombre_eleccion TEXT NOT NULL,
-                fecha_inicio TIMESTAMP NOT NULL,
-                fecha_fin TIMESTAMP NOT NULL,
-                status TEXT NOT NULL,
-                candidate_count INT NOT NULL,
-                vote_count INT NOT NULL,
-                is_active BOOLEAN NOT NULL
+        /// <summary>
+        /// Crea la tabla Elections según el esquema real de SQL Server
+        /// </summary>
+        internal const string Elections = """
+            DROP TABLE IF EXISTS "Elections";
+            
+            CREATE TABLE "Elections"(
+                "ElectionId" SERIAL PRIMARY KEY,
+                "Name" VARCHAR(100) NOT NULL,
+                "StartDate" TIMESTAMP NOT NULL,
+                "EndDate" TIMESTAMP NOT NULL
             );
         """;
 
+        /// <summary>
+        /// Crea la tabla Candidates según el esquema real de SQL Server
+        /// </summary>
+        internal const string Candidates = """
+            DROP TABLE IF EXISTS "Candidates";
+            
+            CREATE TABLE "Candidates"(
+                "CandidateId" SERIAL PRIMARY KEY,
+                "Name" VARCHAR(100) NOT NULL,
+                "Party" VARCHAR(100) NOT NULL,
+                "ElectionId" INT NOT NULL,
+                CONSTRAINT "FK_Candidates_Elections" FOREIGN KEY("ElectionId") 
+                    REFERENCES "Elections"("ElectionId"),
+                CONSTRAINT "UQ_Candidate" UNIQUE ("Name", "ElectionId")
+            );
+        """;
+
+        /// <summary>
+        /// Crea la tabla Votes según el esquema real de SQL Server
+        /// </summary>
+        internal const string Votes = """
+            DROP TABLE IF EXISTS "Votes";
+            
+            CREATE TABLE "Votes"(
+                "VoteId" SERIAL PRIMARY KEY,
+                "ElectionId" INT NOT NULL,
+                "VoterId" INT NOT NULL,
+                "CandidateId" INT NOT NULL,
+                "CastedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT "FK_Votes_Elections" FOREIGN KEY("ElectionId") 
+                    REFERENCES "Elections"("ElectionId"),
+                CONSTRAINT "FK_Votes_Voters" FOREIGN KEY("VoterId") 
+                    REFERENCES "Users"("UserId"),
+                CONSTRAINT "FK_Votes_Candidates" FOREIGN KEY("CandidateId") 
+                    REFERENCES "Candidates"("CandidateId"),
+                CONSTRAINT "UQ_Vote" UNIQUE ("ElectionId", "VoterId")
+            );
+        """;
+
+        /// <summary>
+        /// Crea la tabla AuditLog según el esquema real de SQL Server
+        /// </summary>
+        internal const string AuditLog = """
+            DROP TABLE IF EXISTS "AuditLog";
+            
+            CREATE TABLE "AuditLog"(
+                "AuditId" SERIAL PRIMARY KEY,
+                "UserId" INT NOT NULL,
+                "Action" VARCHAR(50) NOT NULL,
+                "Timestamp" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                "Details" VARCHAR(255),
+                CONSTRAINT "FK_AuditLog_Users" FOREIGN KEY("UserId") 
+                    REFERENCES "Users"("UserId")
+            );
+        """;
+
+        /// <summary>
+        /// Script de datos de prueba (seed data)
+        /// </summary>
+        internal const string Seed = """
+            -- Insertar usuarios de prueba
+            INSERT INTO "Users"("Identification", "FullName", "Email", "PasswordHash", "Role")
+            VALUES 
+                ('101', 'Dennis Ritchie', 'dennis@example.com', NULL, 'Voter'),
+                ('102', 'Bjorn Stroustrup', 'bjorn@example.com', NULL, 'Voter'),
+                ('103', 'Richard Stallman', 'richard@example.com', NULL, 'Voter'),
+                ('104', 'Linus Torvalds', 'linus@example.com', NULL, 'Admin'),
+                ('105', 'Grace Hopper', 'grace@example.com', NULL, 'Auditor');
+
+            -- Insertar una elección de prueba
+            INSERT INTO "Elections"("Name", "StartDate", "EndDate")
+            VALUES ('Elección Presidencial 2024', '2024-11-01', '2024-11-30');
+
+            -- Insertar candidatos de prueba
+            INSERT INTO "Candidates"("Name", "Party", "ElectionId")
+            VALUES 
+                ('Mr. Anderson', 'Partido A', 1),
+                ('Morpheus', 'Partido B', 1),
+                ('Trinity', 'Partido C', 1);
+
+            -- Insertar un voto de prueba
+            INSERT INTO "Votes"("ElectionId", "VoterId", "CandidateId")
+            VALUES (1, 2, 1); -- Bjorn votó por Mr. Anderson
+        """;
+
+        // ===== SCRIPTS LEGACY (para compatibilidad con tests existentes) =====
+
+        /// <summary>
+        /// DDL legacy para tests de votantes y candidatos (si aún se usa)
+        /// </summary>
+        internal const string DDL = """
+            DROP TABLE IF EXISTS votantes;
+            DROP TABLE IF EXISTS candidatos;
+
+            CREATE TABLE candidatos(
+              id     SERIAL PRIMARY KEY,
+              cedula TEXT NOT NULL UNIQUE,
+              nombre TEXT NOT NULL
+            );
+
+            CREATE TABLE votantes(
+              id                   SERIAL PRIMARY KEY,
+              nombre               TEXT NOT NULL,
+              cedula               TEXT NOT NULL UNIQUE,
+              ya_voto              BOOLEAN NOT NULL DEFAULT FALSE,
+              candidato_votado_id  INT NULL REFERENCES candidatos(id),
+              fecha_voto           TIMESTAMP NULL
+            );
+        """;
+
+        /// <summary>
+        /// Seed legacy (si aún se usa)
+        /// </summary>
+        internal const string SeedLegacy = """
+            INSERT INTO candidatos(cedula, nombre) 
+            VALUES 
+                ('901','Mr.Anderson.'), 
+                ('902','Morpheus');
+
+            INSERT INTO votantes(nombre, cedula, ya_voto, candidato_votado_id)
+            VALUES
+              ('Dennis Ritchie',  '101', FALSE, NULL),
+              ('Bjorn Stroustrup', '102', TRUE,  1),
+              ('Richard Stallman',   '103', FALSE, NULL);
+        """;
         internal const string votes = """
             DROP TABLE IF EXISTS votos;
             CREATE TABLE votos(
@@ -102,5 +177,4 @@ namespace IntegrationTest
         """;
 
     }
-
 }

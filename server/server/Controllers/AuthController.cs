@@ -37,7 +37,6 @@ public class AuthController : ControllerBase
         return true;
     }
 
-
     // Login
     [HttpPost("login")]
     [AllowAnonymous]
