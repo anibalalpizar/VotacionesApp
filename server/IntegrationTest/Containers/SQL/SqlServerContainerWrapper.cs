@@ -67,7 +67,6 @@ namespace IntegrationTest
             await using (var cmd = new SqlCommand(ScriptsQLS.votes, con))
                 await cmd.ExecuteNonQueryAsync();
         }
-        }
 
         /// <summary>
         /// Retorna el objeto de conexión para usar en tus pruebas.
