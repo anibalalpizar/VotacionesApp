@@ -24,12 +24,12 @@ namespace EleccionesUTN
             using var con = new NpgsqlConnection(_connectionString);
             con.OpenAsync();
 
-            using (var upd = new NpgsqlCommand(@"update votantes
-                                                   set ya_voto = true,
-                                                       candidato_votado_id = @cid,
-                                                       fecha_voto = now()
-                                                 where cedula = @vid;", con))
+            using (var upd = new NpgsqlCommand(@"INSERT INTO ""votos"" (""candidateid"", ""voterid"", ""electionid"")
+                                                 VALUES (@cid, @vid, 1);   
+                                                 WHERE voteId = 1;", con))
             {
+
+
                 upd.Parameters.AddWithValue("cid", candidatoId);
                 upd.Parameters.AddWithValue("vid", cedulaVotante);
                 upd.ExecuteNonQuery();
@@ -73,7 +73,7 @@ namespace EleccionesUTN
             using var con = new NpgsqlConnection(_connectionString);
             con.OpenAsync();
 
-            using (var sqlCmd = new NpgsqlCommand("select ya_voto from votantes where cedula=@vid for update;", con))
+            using (var sqlCmd = new NpgsqlCommand("select voterId from votos where voterId=@vid and electionid=@;", con))
             {
                 sqlCmd.Parameters.AddWithValue("vid", cedulaVotante);
                 var r = sqlCmd.ExecuteScalar();
@@ -162,6 +162,40 @@ namespace EleccionesUTN
 
 
             throw new NotImplementedException();
+        }
+
+        public int GetEleccion(int eleccion)
+        {
+            using var con = new NpgsqlConnection(_connectionString);
+            con.OpenAsync();
+
+            using (var sqlCmd = new NpgsqlCommand("select id from elecciones where id=@elecc;", con))
+            {
+                sqlCmd.Parameters.AddWithValue("elecc", eleccion);
+                var id = sqlCmd.ExecuteScalar();
+
+                if (id is null)
+                    throw new Exceptions.NotFoundException("Eleccion", eleccion.ToString());
+
+                return (int)id;
+            }
+        }
+
+        public string GetVotante(string identificacion)
+        {
+            using var con = new NpgsqlConnection(_connectionString);
+            con.OpenAsync();
+
+            using (var sqlCmd = new NpgsqlCommand("select id from Users where Identification=@id;", con))
+            {
+                sqlCmd.Parameters.AddWithValue("id", identificacion);
+                var id = sqlCmd.ExecuteScalar();
+
+                if (id is null)
+                    throw new Exceptions.NotFoundException("Votante", identificacion.ToString());
+
+                return (string)id;
+            }
         }
     }
 }

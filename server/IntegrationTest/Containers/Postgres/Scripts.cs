@@ -90,6 +90,17 @@ namespace IntegrationTest
             );
         """;
 
+        internal const string votes = """
+            DROP TABLE IF EXISTS votos;
+            CREATE TABLE votos(
+                id SERIAL PRIMARY KEY,
+                voterId int NOT NULL,
+                candidateId int NOT NULL,
+                electionid int NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """;
+
     }
 
 }
