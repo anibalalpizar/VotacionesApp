@@ -165,6 +165,7 @@ namespace IntegrationTest
               ('Bjorn Stroustrup', '102', TRUE,  1),
               ('Richard Stallman',   '103', FALSE, NULL);
         """;
+
         internal const string votes = """
             DROP TABLE IF EXISTS votos;
             CREATE TABLE votos(
