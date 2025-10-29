@@ -1,16 +1,20 @@
+# Automatically trigger pipeline on push to main branch
 trigger:
   - main
 
+# Use self-hosted agent pool
 pool:
   name: 'LocalPool'
 
+# Pipeline variables
 variables:
-  buildConfiguration: 'Release'
-  dotnetVersion: '8.x'
+  buildConfiguration: 'Release'  # Build in Release mode for production optimization
+  dotnetVersion: '8.x'           # .NET SDK version to use
 
 steps:
 
-# Install .NET SDK
+# Step 1: Install .NET SDK
+# Downloads and installs the specified .NET SDK version on the build agent
 - task: UseDotNet@2
   displayName: 'Install .NET SDK $(dotnetVersion)'
   inputs:
@@ -18,31 +22,37 @@ steps:
     version: '$(dotnetVersion)'
     installationPath: $(Agent.ToolsDirectory)/dotnet
 
-# Restore dependencies
+# Step 2: Restore NuGet packages
+# Restores all project dependencies from NuGet before building
 - script: |
     echo Restoring dependencies...
     dotnet restore server/server.sln --verbosity normal
   displayName: 'Restore NuGet packages'
 
-# Build solution
+# Step 3: Build the solution
+# Compiles the entire solution in Release mode without restoring packages again
 - script: |
     echo Building solution...
     dotnet build server/server.sln --configuration $(buildConfiguration) --no-restore
   displayName: 'Build solution in $(buildConfiguration) mode'
 
-# Run unit tests
+# Step 4: Run unit tests
+# Executes all unit tests and generates TRX report files
 - script: |
     echo Running unit tests...
     dotnet test server/UnitTests/UnitTests.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/UnitTests/TestResults
   displayName: 'Run unit tests'
 
-# Run integration tests
+# Step 5: Run integration tests
+# Executes all integration tests and generates TRX report files
 - script: |
     echo Running integration tests...
     dotnet test server/IntegrationTest/IntegrationTest.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/IntegrationTest/TestResults
   displayName: 'Run integration tests'
 
-# Publish unit test results
+# Step 6: Publish unit test results
+# Uploads unit test results to Azure DevOps for visualization
+# Runs even if previous steps failed to ensure test results are always published
 - task: PublishTestResults@2
   displayName: 'Publish unit test results'
   inputs:
@@ -54,7 +64,9 @@ steps:
     testRunTitle: 'Unit Tests - VotacionesApp'
   condition: succeededOrFailed()
 
-# Publish integration test results
+# Step 7: Publish integration test results
+# Uploads integration test results to Azure DevOps for visualization
+# Pipeline will fail if integration tests fail (failTaskOnFailedTests: true)
 - task: PublishTestResults@2
   displayName: 'Publish integration test results'
   inputs:
@@ -66,14 +78,18 @@ steps:
     testRunTitle: 'Integration Tests - VotacionesApp'
   condition: succeededOrFailed()
 
-# Generate build artifacts (optional)
+# Step 8: Generate build artifacts (optional)
+# Creates a publishable version of the application
+# Only runs if all previous steps succeeded
 - script: |
     echo Generating artifacts...
     dotnet publish server/server.sln --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
   displayName: 'Generate build artifacts'
   condition: succeeded()
 
-# Publish artifacts to Azure DevOps (optional)
+# Step 9: Publish artifacts to Azure DevOps (optional)
+# Uploads compiled binaries to Azure Artifacts for storage and deployment
+# Only runs if all previous steps succeeded
 - task: PublishBuildArtifacts@1
   displayName: 'Publish artifacts to Azure DevOps'
   inputs:
