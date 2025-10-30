@@ -17,7 +17,9 @@ public class ResultsController : ControllerBase
     public ResultsController(AppDbContext db)
     {
         _db = db;
-    }
+    }     
+
+
 
     [HttpGet("{electionId:int}/results")]
     [ProducesResponseType(typeof(ElectionResultDto), StatusCodes.Status200OK)]
