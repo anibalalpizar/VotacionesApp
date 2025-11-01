@@ -8,13 +8,15 @@ pool:
 
 # Pipeline variables
 variables:
-  buildConfiguration: 'Release'  # Build in Release mode for production optimization
-  dotnetVersion: '8.x'           # .NET SDK version to use
+  buildConfiguration: 'Release'
+  dotnetVersion: '8.x'
+  # SonarQube variables
+  sonarQubeProjectKey: 'votaciones-app'
+  sonarQubeProjectName: 'VotacionesApp'
 
 steps:
 
 # Step 1: Install .NET SDK
-# Downloads and installs the specified .NET SDK version on the build agent
 - task: UseDotNet@2
   displayName: 'Install .NET SDK $(dotnetVersion)'
   inputs:
@@ -22,37 +24,58 @@ steps:
     version: '$(dotnetVersion)'
     installationPath: $(Agent.ToolsDirectory)/dotnet
 
-# Step 2: Restore NuGet packages
-# Restores all project dependencies from NuGet before building
+# Step 2: Prepare SonarQube Analysis Configuration
+# Configures SonarQube scanner with project settings before building
+- task: SonarQubePrepare@7
+  displayName: 'Prepare SonarQube Analysis Configuration'
+  inputs:
+    SonarQube: 'SonarQube-Connection'
+    scannerMode: 'MSBuild'
+    projectKey: '$(sonarQubeProjectKey)'
+    projectName: '$(sonarQubeProjectName)'
+    extraProperties: |
+      sonar.cs.vscoveragexml.reportsPaths=$(Agent.TempDirectory)/**/*.coveragexml
+      sonar.exclusions=**/obj/**,**/*.dll
+      sonar.coverage.exclusions=**Tests*.cs
+
+# Step 3: Restore NuGet packages
 - script: |
     echo Restoring dependencies...
     dotnet restore server/server.sln --verbosity normal
   displayName: 'Restore NuGet packages'
 
-# Step 3: Build the solution
-# Compiles the entire solution in Release mode without restoring packages again
+# Step 4: Build the solution
 - script: |
     echo Building solution...
     dotnet build server/server.sln --configuration $(buildConfiguration) --no-restore
   displayName: 'Build solution in $(buildConfiguration) mode'
 
-# Step 4: Run unit tests
-# Executes all unit tests and generates TRX report files
+# Step 5: Run unit tests with code coverage
+# Executes unit tests and collects coverage data for SonarQube
 - script: |
-    echo Running unit tests...
-    dotnet test server/UnitTests/UnitTests.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/UnitTests/TestResults
-  displayName: 'Run unit tests'
+    echo Running unit tests with coverage...
+    dotnet test server/UnitTests/UnitTests.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/UnitTests/TestResults --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+  displayName: 'Run unit tests with code coverage'
 
-# Step 5: Run integration tests
-# Executes all integration tests and generates TRX report files
+# Step 6: Run integration tests with code coverage
 - script: |
-    echo Running integration tests...
-    dotnet test server/IntegrationTest/IntegrationTest.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/IntegrationTest/TestResults
-  displayName: 'Run integration tests'
+    echo Running integration tests with coverage...
+    dotnet test server/IntegrationTest/IntegrationTest.csproj --no-build --configuration $(buildConfiguration) --logger trx --results-directory server/IntegrationTest/TestResults --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+  displayName: 'Run integration tests with code coverage'
 
-# Step 6: Publish unit test results
-# Uploads unit test results to Azure DevOps for visualization
-# Runs even if previous steps failed to ensure test results are always published
+# Step 7: Run SonarQube Code Analysis
+# Executes static code analysis and sends results to SonarQube server
+- task: SonarQubeAnalyze@7
+  displayName: 'Run SonarQube Code Analysis'
+
+# Step 8: Publish SonarQube Quality Gate Result
+# Waits for SonarQube processing and checks if code meets quality standards
+- task: SonarQubePublish@7
+  displayName: 'Publish Quality Gate Result'
+  inputs:
+    pollingTimeoutSec: '300'
+
+# Step 9: Publish unit test results
 - task: PublishTestResults@2
   displayName: 'Publish unit test results'
   inputs:
@@ -64,9 +87,7 @@ steps:
     testRunTitle: 'Unit Tests - VotacionesApp'
   condition: succeededOrFailed()
 
-# Step 7: Publish integration test results
-# Uploads integration test results to Azure DevOps for visualization
-# Pipeline will fail if integration tests fail (failTaskOnFailedTests: true)
+# Step 10: Publish integration test results
 - task: PublishTestResults@2
   displayName: 'Publish integration test results'
   inputs:
@@ -78,18 +99,23 @@ steps:
     testRunTitle: 'Integration Tests - VotacionesApp'
   condition: succeededOrFailed()
 
-# Step 8: Generate build artifacts (optional)
-# Creates a publishable version of the application
-# Only runs if all previous steps succeeded
+# Step 11: Publish Code Coverage Results
+# Uploads coverage data to Azure DevOps for visualization
+- task: PublishCodeCoverageResults@2
+  displayName: 'Publish code coverage results'
+  inputs:
+    summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.opencover.xml'
+    failIfCoverageEmpty: false
+  condition: succeededOrFailed()
+
+# Step 12: Generate build artifacts
 - script: |
     echo Generating artifacts...
     dotnet publish server/server.sln --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
   displayName: 'Generate build artifacts'
   condition: succeeded()
 
-# Step 9: Publish artifacts to Azure DevOps (optional)
-# Uploads compiled binaries to Azure Artifacts for storage and deployment
-# Only runs if all previous steps succeeded
+# Step 13: Publish artifacts to Azure DevOps
 - task: PublishBuildArtifacts@1
   displayName: 'Publish artifacts to Azure DevOps'
   inputs:
