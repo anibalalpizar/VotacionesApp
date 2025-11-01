@@ -30,7 +30,7 @@ steps:
   displayName: 'Prepare SonarQube Analysis Configuration'
   inputs:
     SonarQube: 'SonarQube-Connection'
-    scannerMode: 'MSBuild'
+    scannerMode: 'dotnet'
     projectKey: '$(sonarQubeProjectKey)'
     projectName: '$(sonarQubeProjectName)'
     extraProperties: |
