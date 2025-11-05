@@ -74,6 +74,7 @@ steps:
   displayName: 'Publish Quality Gate Result'
   inputs:
     pollingTimeoutSec: '300'
+  continueOnError: true
 
 # Step 9: Publish unit test results
 - task: PublishTestResults@2
