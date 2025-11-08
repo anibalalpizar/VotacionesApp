@@ -28,7 +28,15 @@ import {
   type ParticipationReportDto,
 } from "@/lib/actions"
 
-export function ParticipationReport({ electionId }: { electionId: string }) {
+interface ParticipationReportProps {
+  electionId: string
+  electionSelector?: React.ReactNode
+}
+
+export function ParticipationReport({
+  electionId,
+  electionSelector,
+}: ParticipationReportProps) {
   const [report, setReport] = useState<ParticipationReportDto | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -117,19 +125,24 @@ export function ParticipationReport({ electionId }: { electionId: string }) {
 
   return (
     <div className="space-y-6">
-      {/* Header Section */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-6 w-6 text-muted-foreground" />
-          <h2 className="text-2xl font-bold tracking-tight">
-            {report.electionName}
-          </h2>
+      {/* Header Section with Election Selector */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-2 flex-1">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-6 w-6 text-muted-foreground" />
+            <h2 className="text-2xl font-bold tracking-tight">
+              {report.electionName}
+            </h2>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Reporte de participación electoral
+            {report.endDateUtc &&
+              ` • Cerró el ${new Date(report.endDateUtc).toLocaleDateString()}`}
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Reporte de participación electoral
-          {report.endDateUtc &&
-            ` • Cerró el ${new Date(report.endDateUtc).toLocaleDateString()}`}
-        </p>
+        {electionSelector && (
+          <div className="flex-shrink-0">{electionSelector}</div>
+        )}
       </div>
 
       {/* Stats Grid */}
