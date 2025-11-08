@@ -1,5 +1,6 @@
 import { AuthGuard } from "@/components/auth-guard"
 import { getCurrentUser } from "@/lib/auth"
+import { AdminDashboard } from "@/components/dashboard/admin-dashboard"
 import { Vote, Users, Shield } from "lucide-react"
 
 export default async function DashboardPage() {
@@ -38,10 +39,24 @@ export default async function DashboardPage() {
         {/* Welcome Section */}
         <div className="space-y-2">
           <h2 className="text-3xl font-bold tracking-tight">
-            Bienvenido, {user?.fullName} {user?.role}
+            Bienvenido, {user?.fullName}
           </h2>
           <p className="text-muted-foreground">{config.description}</p>
         </div>
+
+        {user?.role === "ADMIN" && <AdminDashboard />}
+
+        {user?.role === "VOTER" && (
+          <div className="text-muted-foreground">
+            Panel de votante - Próximamente
+          </div>
+        )}
+
+        {user?.role === "AUDITOR" && (
+          <div className="text-muted-foreground">
+            Panel de auditor - Próximamente
+          </div>
+        )}
       </div>
     </AuthGuard>
   )
