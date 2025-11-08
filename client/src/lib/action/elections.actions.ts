@@ -530,3 +530,47 @@ export async function getElectionResultsAction(electionId: string) {
     }
   }
 }
+
+export async function getClosedElectionsAction(
+  page: number = 1,
+  pageSize: number = 20
+) {
+  const token = await getAuthToken()
+  if (!token) {
+    return {
+      success: false,
+      message:
+        "No tienes autorización para ver elecciones. Inicia sesión como administrador.",
+    }
+  }
+
+  try {
+    const result = await getAllElectionsAction(page, pageSize)
+
+    if (!result.success || !result.data) {
+      return result
+    }
+
+    const now = new Date()
+    const closedElections = result.data.items.filter((election) => {
+      const endDate = new Date(election.endDateUtc)
+      return endDate < now
+    })
+
+    return {
+      success: true,
+      message: "Elecciones cerradas cargadas exitosamente",
+      data: {
+        page: result.data.page,
+        pageSize: result.data.pageSize,
+        total: closedElections.length,
+        items: closedElections,
+      },
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: "Error al obtener las elecciones cerradas.",
+    }
+  }
+}
