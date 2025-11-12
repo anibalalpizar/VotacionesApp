@@ -145,6 +145,130 @@ namespace UnitTests
             Assert.AreEqual("Alice", dto.Items.First().Name);
         }
 
+        [Fact]
+        [TestMethod]
+        [TestDescription("Verifica que GetParticipation devuelve NotFound (404) cuando el ID de la elección especificado no existe en la base de datos.")]
+        public async Task GetParticipation_ReturnsNotFound_WhenElectionDoesNotExist()
+        {
+            // Arrange
+            var db = GetInMemoryDb(nameof(GetParticipation_ReturnsNotFound_WhenElectionDoesNotExist));
+            var controller = new ResultsController(db);
+
+            // Act
+            var result = await controller.GetParticipation(999, CancellationToken.None);
+
+            // Assert
+            var notFound = result as NotFoundObjectResult;
+            Assert.IsNotNull(notFound);
+            Assert.AreEqual(404, notFound.StatusCode);
+        }
+
+        [Fact]
+        [TestMethod]
+        [TestDescription("Verifica que GetParticipation devuelve BadRequest (400) cuando la elección aún no ha finalizado.")]
+        public async Task GetParticipation_ReturnsBadRequest_WhenElectionNotEnded()
+        {
+            // Arrange
+            var db = GetInMemoryDb(nameof(GetParticipation_ReturnsBadRequest_WhenElectionNotEnded));
+
+            db.Elections.Add(new Election
+            {
+                ElectionId = 1,
+                Name = "Ongoing Election",
+                StartDate = DateTimeOffset.UtcNow.AddDays(-1),
+                EndDate = DateTimeOffset.UtcNow.AddHours(1) // Not ended yet
+            });
+            await db.SaveChangesAsync();
+
+            var controller = new ResultsController(db);
+
+            // Act
+            var result = await controller.GetParticipation(1, CancellationToken.None);
+
+            // Assert
+            var badRequest = result as BadRequestObjectResult;
+            Assert.IsNotNull(badRequest);
+            Assert.AreEqual(400, badRequest.StatusCode);
+
+        }
+
+        [TestMethod]
+        [TestDescription("Verifica que GetParticipation devuelve Ok (200) con los datos de participación esperados cuando la elección ha finalizado, incluyendo el total de votantes, votos emitidos y porcentajes calculados de participación.")]
+        public async Task GetParticipation_ReturnsOk_WithExpectedParticipationData()
+        {
+            // Arrange
+            var db = GetInMemoryDb(nameof(GetParticipation_ReturnsOk_WithExpectedParticipationData));
+
+            // Add finished election
+            var election = new Election
+            {
+                ElectionId = 1,
+                Name = "Finalized Election",
+                StartDate = DateTimeOffset.UtcNow.AddDays(-5),
+                EndDate = DateTimeOffset.UtcNow.AddDays(-1)
+            };
+            db.Elections.Add(election);
+
+            // Add voters with required fields populated
+            db.Users.AddRange(
+                new User
+                {
+                    UserId = 1,
+                    Role = UserRole.VOTER,
+                    Email = "voter1@example.com",
+                    FullName = "Voter 1",
+                    Identification = "ID1",
+                    PasswordHash = "hash1"
+                },
+                new User
+                {
+                    UserId = 2,
+                    Role = UserRole.VOTER,
+                    Email = "voter2@example.com",
+                    FullName = "Voter 2",
+                    Identification = "ID2",
+                    PasswordHash = "hash2"
+                },
+                new User
+                {
+                    UserId = 3,
+                    Role = UserRole.VOTER,
+                    Email = "voter3@example.com",
+                    FullName = "Voter 3",
+                    Identification = "ID3",
+                    PasswordHash = "hash3"
+                }
+            );
+
+            // Add votes (2 of 3 voted)
+            db.Votes.AddRange(
+                new Vote { VoteId = 1, ElectionId = 1, VoterId = 1 },
+                new Vote { VoteId = 2, ElectionId = 1, VoterId = 2 }
+            );
+
+            await db.SaveChangesAsync();
+
+            var controller = new ResultsController(db);
+
+            // Act
+            var result = await controller.GetParticipation(1, CancellationToken.None);
+
+            // Assert
+            var okResult = result as OkObjectResult;
+            Assert.IsNotNull(okResult);
+
+            var dto = okResult.Value as ParticipationReportDto;
+            Assert.IsNotNull(dto);
+
+            Assert.AreEqual(3, dto.TotalVoters);
+            Assert.AreEqual(2, dto.TotalVoted);
+            Assert.AreEqual(1, dto.NotParticipated);
+            Assert.AreEqual(66.67, dto.ParticipationPercent);
+            Assert.AreEqual(33.33, dto.NonParticipationPercent);
+            Assert.IsTrue(dto.IsClosed);
+        }
+
+
         [TestCleanup]
         public void TestCleanup()
         {
