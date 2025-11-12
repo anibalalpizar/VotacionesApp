@@ -483,6 +483,67 @@ NEXT_PUBLIC_API_URL=https://api.tudominio.com
 
 ---
 
+## HU8: Resultados de la Elección
+
+### Casos de Prueba
+
+| ID   | Descripción                             | Entrada                              | Resultado Esperado                                   |
+|------|-----------------------------------------|--------------------------------------|------------------------------------------------------|
+| T8.1 | Totales por candidato (solo admin)      | Consultar resultados con rol admin   | Muestra cifras correctas por candidato.              |
+| T8.2 | No disponibles antes del cierre         | Consultar antes del cierre           | Bloquea la consulta anticipada.                      |
+| T8.3 | Disponibles tras cierre                 | Consultar después del cierre         | Resultados visibles en modo lectura.                 |
+| T8.4 | Consistencia total vs votos registrados | Verificar sumatoria de votos         | Totales coinciden con los registros de votos.        |
+
+### Pruebas de Integración
+
+- ✅ El sistema permite consultar resultados solo tras el cierre de la elección.  
+- ✅ Los resultados son visibles únicamente para el rol **Administrador**.  
+- ✅ Las consultas previas al cierre son correctamente bloqueadas.  
+- ✅ Los totales coinciden con los registros de votos en base de datos.  
+- ✅ La interfaz muestra los resultados en formato legible y sin errores.
+
+---
+
+## HU9: Reporte de Participación
+
+### Casos de Prueba
+
+| ID   | Descripción                | Entrada                            | Resultado Esperado                             |
+|------|----------------------------|------------------------------------|------------------------------------------------|
+| T9.1 | Cálculo de participación   | Ejecutar reporte de participación  | Sistema calcula porcentaje correctamente.      |
+| T9.2 | Conteo de no participantes | Consultar reporte de no votantes   | Sistema muestra número exacto de no votantes.  |
+| T9.3 | Disponible al cierre       | Intentar consulta antes del cierre | Reporte bloqueado hasta el cierre de elección. |
+
+### Pruebas de Integración
+
+- ✅ El sistema calcula correctamente el porcentaje de participación (votos emitidos / total de votantes).  
+- ✅ Los valores del reporte coinciden con los registros almacenados en base de datos.  
+- ✅ El reporte solo puede generarse tras el cierre de la elección.  
+- ✅ El reporte puede exportarse en formato PDF o CSV de manera legible.
+
+---
+
+## HU10: Bitácora de Auditoría
+
+### Casos de Prueba
+
+| ID    | Descripción            | Entrada                       | Resultado Esperado                                       |
+|-------|------------------------|-------------------------------|----------------------------------------------------------|
+| T10.1 | Registro de creación   | Crear elección o votante      | Log generado con fecha, hora y usuario.                  |
+| T10.2 | Registro de voto       | Emitir voto válido            | Evento auditado sin registrar contenido del voto.        |
+| T10.3 | Consulta de logs       | Filtrar por usuario o fecha   | Resultados correctos mostrados.                          |
+| T10.4 | Acceso restringido     | Intentar acceder sin permisos | Solo visible para usuarios con rol Admin/Auditor.        |
+
+### Pruebas de Integración
+
+- ✅ El sistema registra eventos de creación, votación y consultas de auditoría.  
+- ✅ Los registros incluyen fecha, hora, usuario y acción realizada.  
+- ✅ No se almacena información sensible del voto.  
+- ✅ Solo los usuarios con rol **Administrador** o **Auditor** pueden consultar la bitácora.  
+- ✅ Los registros son inmutables y cumplen la política de trazabilidad.
+
+---
+
 
 ### Cómo Ejecutar las Pruebas
 
