@@ -5,6 +5,8 @@ using Microsoft.Data.SqlClient;
 using Server.Data;
 using Server.Models;
 using Server.DTOs;
+using Server.Services;
+using Server.Utils;
 
 namespace Server.Controllers;
 
@@ -14,10 +16,12 @@ namespace Server.Controllers;
 public class CandidatesController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly IAuditService _audit;
 
-    public CandidatesController(AppDbContext db)
+    public CandidatesController(AppDbContext db, IAuditService audit)
     {
         _db = db;
+        _audit = audit;
     }
 
     // GET: /api/candidates
@@ -33,7 +37,7 @@ public class CandidatesController : ControllerBase
         pageSize = pageSize is < 1 or > 100 ? 20 : pageSize;
 
         var query = _db.Candidates
-            .Include(c => c.Election) 
+            .Include(c => c.Election)
             .AsNoTracking()
             .AsQueryable();
 
@@ -134,6 +138,13 @@ public class CandidatesController : ControllerBase
             return Conflict(new { message = "Ya existe un candidato con ese nombre en esta elección." });
         }
 
+        // Auditoría: candidato creado
+        await _audit.LogAsync(
+            action: AuditActions.CandidateCreated,
+            details: $"Candidato creado (ID={entity.CandidateId}, Nombre='{entity.Name}', ElectionId={entity.ElectionId})",
+            ct: ct
+        );
+
         var response = new
         {
             CandidateId = entity.CandidateId,
@@ -192,6 +203,11 @@ public class CandidatesController : ControllerBase
         if (duplicate)
             return Conflict(new { message = "Ya existe otro candidato con ese nombre en esa elección." });
 
+        // Valores anteriores (para detalle de auditoría)
+        var oldName = entity.Name;
+        var oldParty = entity.Party;
+        var oldElectionId = entity.ElectionId;
+
         // Aplicar cambios
         entity.Name = name;
         entity.Party = party;
@@ -207,6 +223,15 @@ public class CandidatesController : ControllerBase
             // Índice único (ElectionId, Name) violado
             return Conflict(new { message = "Ya existe otro candidato con ese nombre en esa elección." });
         }
+
+        // Auditoría: candidato actualizado
+        await _audit.LogAsync(
+            action: AuditActions.CandidateUpdated,
+            details: $"Candidato actualizado (ID={entity.CandidateId}, " +
+                     $"NombreAntes='{oldName}', NombreDespues='{entity.Name}', " +
+                     $"ElectionIdAntes={oldElectionId}, ElectionIdDespues={entity.ElectionId})",
+            ct: ct
+        );
 
         // Aseguramos tener el nombre de la elección (si cambió, recargamos la referencia)
         if (entity.Election == null || entity.Election.ElectionId != entity.ElectionId)
@@ -225,7 +250,6 @@ public class CandidatesController : ControllerBase
         });
     }
 
-
     // DELETE: /api/candidates/{id}
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -236,8 +260,19 @@ public class CandidatesController : ControllerBase
         if (entity is null)
             return NotFound(new { message = "El candidato no existe." });
 
+        var deletedId = entity.CandidateId;
+        var deletedName = entity.Name;
+        var deletedElectionId = entity.ElectionId;
+
         _db.Candidates.Remove(entity);
         await _db.SaveChangesAsync(ct);
+
+        // Auditoría: candidato eliminado
+        await _audit.LogAsync(
+            action: AuditActions.CandidateDeleted,
+            details: $"Candidato eliminado (ID={deletedId}, Nombre='{deletedName}', ElectionId={deletedElectionId})",
+            ct: ct
+        );
 
         return Ok(new { message = "El candidato se ha eliminado con éxito." });
     }

@@ -19,7 +19,11 @@ public class AuthController : ControllerBase
     private readonly IMailSender _email;
     private readonly IAuditService _audit;
 
-    public AuthController(AppDbContext db, IJwtTokenService jwt, IMailSender email, IAuditService audit)
+    public AuthController(
+        AppDbContext db,
+        IJwtTokenService jwt,
+        IMailSender email,
+        IAuditService audit)
     {
         _db = db;
         _jwt = jwt;
@@ -30,16 +34,16 @@ public class AuthController : ControllerBase
     private bool IsValidPassword(string password)
     {
         if (string.IsNullOrWhiteSpace(password)) return false;
-        if (password.Length < 8) return false; // mínimo 8 caracteres
-        if (!password.Any(char.IsUpper)) return false; // al menos una mayúscula
-        if (!password.Any(char.IsLower)) return false; // al menos una minúscula
-        if (!password.Any(char.IsDigit)) return false; // al menos un número
+        if (password.Length < 8) return false;                       // mínimo 8 caracteres
+        if (!password.Any(char.IsUpper)) return false;               // al menos una mayúscula
+        if (!password.Any(char.IsLower)) return false;               // al menos una minúscula
+        if (!password.Any(char.IsDigit)) return false;               // al menos un número
         if (!password.Any(ch => !char.IsLetterOrDigit(ch))) return false; // al menos un caracter especial
 
         return true;
     }
 
-    // Login
+    // POST: /api/auth/login
     [HttpPost("login")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
@@ -51,6 +55,12 @@ public class AuthController : ControllerBase
 
         if (user is null)
         {
+            // Login fallido aunque no exista el usuario
+            await _audit.LogAsync(
+                AuditActions.LoginFailed,
+                $"Login fallido. Usuario/correo no encontrado: {req.UserOrEmail}"
+            );
+
             return Unauthorized(new { error = "Credenciales inválidas." });
         }
 
@@ -70,7 +80,7 @@ public class AuthController : ControllerBase
 
         if (!valid)
         {
-            //Registrar intento fallido
+            // Login fallido con usuario encontrado pero contraseña incorrecta
             await _audit.LogAsync(
                 userId: user.UserId,
                 action: AuditActions.LoginFailed,
@@ -80,7 +90,7 @@ public class AuthController : ControllerBase
             return Unauthorized(new { error = "Credenciales inválidas." });
         }
 
-        //Login exitoso
+        // Login exitoso
         await _audit.LogAsync(
             userId: user.UserId,
             action: AuditActions.LoginSuccess,
@@ -107,6 +117,7 @@ public class AuthController : ControllerBase
         return Ok(resp);
     }
 
+    // POST: /api/auth/change-password
     [HttpPost("change-password")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -116,7 +127,12 @@ public class AuthController : ControllerBase
     {
         if (!IsValidPassword(req.NewPassword))
         {
-            return BadRequest(new { error = "La nueva contraseña no cumple con los requisitos mínimos de seguridad. La contraseña debe de tener AL MENOS una letra mayúscula, una letra minúscula, un número y un caracter especial. Por ejemplo: Ejemplo123!" });
+            return BadRequest(new
+            {
+                error = "La nueva contraseña no cumple con los requisitos mínimos de seguridad. " +
+                        "La contraseña debe de tener AL MENOS una letra mayúscula, una letra minúscula, " +
+                        "un número y un caracter especial. Por ejemplo: Ejemplo123!"
+            });
         }
 
         var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == req.UserId, ct);
@@ -138,7 +154,7 @@ public class AuthController : ControllerBase
 
         await _db.SaveChangesAsync(ct);
 
-        //Registrar cambio de contraseña
+        // Registrar cambio de contraseña
         await _audit.LogAsync(
             userId: user.UserId,
             action: AuditActions.PasswordChanged,
@@ -148,6 +164,7 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Contraseña cambiada con éxito.", isFirstTime = false });
     }
 
+    // POST: /api/auth/forgot-password
     [HttpPost("forgot-password")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -161,6 +178,7 @@ public class AuthController : ControllerBase
 
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
 
+        // Siempre respondemos lo mismo para no revelar si existe o no
         if (user is null)
             return Ok(new { message = "Si el correo existe, se enviará una contraseña temporal." });
 
@@ -185,7 +203,7 @@ public class AuthController : ControllerBase
 
             await tx.CommitAsync(ct);
 
-            //Registrar recuperación de contraseña
+            // Registrar recuperación de contraseña
             await _audit.LogAsync(
                 userId: user.UserId,
                 action: AuditActions.PasswordRecovery,
@@ -197,6 +215,7 @@ public class AuthController : ControllerBase
         catch
         {
             await tx.RollbackAsync(ct);
+            // No revelamos detalle, pero tampoco bitacorizamos porque no sabemos si llegó a guardarse algo
             return Ok(new { message = "Si el correo existe, se enviará una contraseña temporal." });
         }
     }

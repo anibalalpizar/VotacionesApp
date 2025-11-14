@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Server.Data;
 using Server.DTOs;
 using Server.Models;
+using Server.Services;
+using Server.Utils;
 
 namespace Server.Controllers;
 
@@ -13,8 +15,13 @@ namespace Server.Controllers;
 public class ResultsController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public ResultsController(AppDbContext db) => _db = db;
+    private readonly IAuditService _audit;
 
+    public ResultsController(AppDbContext db, IAuditService audit)
+    {
+        _db = db;
+        _audit = audit;
+    }
 
     // GET /api/elections/{electionId}/results
     [HttpGet("{electionId:int}/results")]
@@ -34,10 +41,19 @@ public class ResultsController : ControllerBase
         var now = DateTimeOffset.UtcNow;
         var isClosed = election.EndDate.HasValue && now > election.EndDate.Value;
         if (!isClosed)
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new { message = "Los resultados solo pueden consultarse cuando la elección esté cerrada." });
+        {
+            // Se intentó ver resultados antes del cierre (se puede auditar si quieres)
+            await _audit.LogAsync(
+                action: AuditActions.ResultsViewed,
+                details: $"Intento de ver resultados antes del cierre. Elección {election.ElectionId}"
+            );
 
- 
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new { message = "Los resultados solo pueden consultarse cuando la elección esté cerrada." }
+            );
+        }
+
         var items = await _db.Candidates
             .AsNoTracking()
             .Where(c => c.ElectionId == electionId)
@@ -66,9 +82,14 @@ public class ResultsController : ControllerBase
             Items = items
         };
 
+        // Log de consulta de resultados
+        await _audit.LogAsync(
+            action: AuditActions.ResultsViewed,
+            details: $"Resultados consultados para elección {election.ElectionId}"
+        );
+
         return Ok(dto);
     }
-
 
     // GET /api/elections/{electionId}/participation
     [HttpGet("{electionId:int}/participation")]
@@ -88,7 +109,6 @@ public class ResultsController : ControllerBase
         if (!(election.EndDate.HasValue && now > election.EndDate.Value))
             return BadRequest(new { message = "El reporte de participación está disponible solo cuando la elección ha finalizado." });
 
-       
         var totalVoters = await _db.Users.CountAsync(u => u.Role == UserRole.VOTER, ct);
 
         // Distintos votantes que emitieron voto en esa elección
@@ -115,6 +135,12 @@ public class ResultsController : ControllerBase
             EndDateUtc = election.EndDate?.ToUniversalTime(),
             IsClosed = true
         };
+
+        // Log de consulta de participación (entra como parte de “consulta de resultados” / auditoría)
+        await _audit.LogAsync(
+            action: AuditActions.ResultsViewed,
+            details: $"Reporte de participación consultado para elección {election.ElectionId}"
+        );
 
         return Ok(dto);
     }

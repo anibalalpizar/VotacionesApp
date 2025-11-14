@@ -1,6 +1,6 @@
 ﻿namespace Server.Models;
 
-public enum UserRole { ADMIN, VOTER }
+public enum UserRole { ADMIN, VOTER, AUDITOR }
 
 public class User
 {

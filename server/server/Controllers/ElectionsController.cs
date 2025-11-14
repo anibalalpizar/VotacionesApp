@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Server.Data;
 using Server.DTOs;
 using Server.Models;
+using Server.Services;
+using Server.Utils;
 
 namespace Server.Controllers;
 
@@ -13,11 +15,13 @@ namespace Server.Controllers;
 public class ElectionsController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly IAuditService _audit;
     private static TimeZoneInfo _appTz = TimeZoneInfo.Local; // zona de la app (fallback)
 
-    public ElectionsController(AppDbContext db, IConfiguration cfg)
+    public ElectionsController(AppDbContext db, IConfiguration cfg, IAuditService audit)
     {
         _db = db;
+        _audit = audit;
 
         // Opcional: configura la zona en appsettings.json -> "App:TimeZoneId"
         var tzId = cfg["App:TimeZoneId"];
@@ -126,12 +130,19 @@ public class ElectionsController : ControllerBase
         {
             Name = name,
             StartDate = sClient, // guardamos con offset
-            EndDate = eClient  // guardamos con offset
+            EndDate = eClient    // guardamos con offset
             // SIN columna Status en BD
         };
 
         _db.Elections.Add(entity);
         await _db.SaveChangesAsync(ct);
+
+        // Auditoría: elección creada
+        await _audit.LogAsync(
+            action: AuditActions.ElectionCreated,
+            details: $"Elección creada (ID={entity.ElectionId}, Nombre='{entity.Name}')",
+            ct: ct
+        );
 
         return CreatedAtAction(nameof(GetById), new { id = entity.ElectionId }, ToDto(entity, 0, 0));
     }
@@ -188,8 +199,7 @@ public class ElectionsController : ControllerBase
     }
 
     // PUT: /api/elections/{id}
-    // Regla ejemplo: permitir cambiar fechas siempre (si no tienes restricción de estado en BD),
-    // validando rango y nombre único.
+    // Permite cambiar fechas y nombre, validando rango y nombre único.
     [HttpPut("{id:int}")]
     [ProducesResponseType(typeof(ElectionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -215,9 +225,16 @@ public class ElectionsController : ControllerBase
 
         e.Name = name;
         e.StartDate = sClient; // conservar offset
-        e.EndDate = eClient; // conservar offset
+        e.EndDate = eClient;   // conservar offset
 
         await _db.SaveChangesAsync(ct);
+
+        // Auditoría: elección actualizada
+        await _audit.LogAsync(
+            action: AuditActions.ElectionUpdated,
+            details: $"Elección actualizada (ID={e.ElectionId}, Nombre='{e.Name}')",
+            ct: ct
+        );
 
         var candidateCount = await _db.Candidates.CountAsync(c => c.ElectionId == id, ct);
         var voteCount = await _db.Votes.CountAsync(v => v.ElectionId == id, ct);
@@ -243,8 +260,18 @@ public class ElectionsController : ControllerBase
         if (hasCandidates)
             return BadRequest(new { message = "No se puede eliminar: remueva o reasigne los candidatos primero." });
 
+        var deletedName = e.Name;
+        var deletedId = e.ElectionId;
+
         _db.Elections.Remove(e);
         await _db.SaveChangesAsync(ct);
+
+        // Auditoría: elección eliminada
+        await _audit.LogAsync(
+            action: AuditActions.ElectionDeleted,
+            details: $"Elección eliminada (ID={deletedId}, Nombre='{deletedName}')",
+            ct: ct
+        );
 
         return Ok(new { message = "La elección fue eliminada con éxito." });
     }

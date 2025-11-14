@@ -7,6 +7,7 @@ using Server.Data;
 using Server.DTOs;
 using Server.Models;
 using Server.Services;
+using Server.Utils; // AuditActions
 
 namespace Server.Controllers;
 
@@ -16,12 +17,14 @@ namespace Server.Controllers;
 public class VotesController : ControllerBase
 {
     private readonly AppDbContext _db;
-    private readonly IMailSender _mail; // Confirmación por correo
+    private readonly IMailSender _mail;   // Confirmación por correo
+    private readonly IAuditService _audit;
 
-    public VotesController(AppDbContext db, IMailSender mail)
+    public VotesController(AppDbContext db, IMailSender mail, IAuditService audit)
     {
         _db = db;
         _mail = mail;
+        _audit = audit;
     }
 
     // Lee el id de usuario desde varios posibles claims
@@ -70,6 +73,13 @@ public class VotesController : ControllerBase
         if (req.ElectionId <= 0 || req.CandidateId <= 0)
             return BadRequest(new { message = "ElectionId y CandidateId deben ser mayores a 0." });
 
+        // Logueamos el intento de voto (sin contenido específico del voto)
+        await _audit.LogAsync(
+            userId: voterId.Value,
+            action: AuditActions.VoteAttempt,
+            details: $"Intento de voto en elección {req.ElectionId}"
+        );
+
         // 2) Validar elección existente y ACTIVA por fechas (dinámico)
         var election = await _db.Elections
             .AsNoTracking()
@@ -79,7 +89,15 @@ public class VotesController : ControllerBase
             return NotFound(new { message = "La elección no existe." });
 
         if (!IsActiveNow(election.StartDate, election.EndDate))
+        {
+            await _audit.LogAsync(
+                userId: voterId.Value,
+                action: AuditActions.VoteAttempt,
+                details: $"Intento de voto en elección inactiva {election.ElectionId}"
+            );
+
             return BadRequest(new { message = "La elección no está activa." });
+        }
 
         // 3) Validar candidato existente y que pertenezca a la elección
         var candidate = await _db.Candidates
@@ -97,7 +115,15 @@ public class VotesController : ControllerBase
             .AnyAsync(v => v.VoterId == voterId.Value && v.ElectionId == req.ElectionId, ct);
 
         if (alreadyVoted)
+        {
+            await _audit.LogAsync(
+                userId: voterId.Value,
+                action: AuditActions.VoteAttempt,
+                details: $"Intento de segundo voto en elección {election.ElectionId}"
+            );
+
             return Conflict(new { message = "Ya has emitido tu voto en esta elección." });
+        }
 
         // 5) Registrar voto (con índice único a nivel BD como candado)
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
@@ -115,6 +141,13 @@ public class VotesController : ControllerBase
             await _db.SaveChangesAsync(ct);
 
             await tx.CommitAsync(ct);
+
+            // Log de voto emitido (sin guardar el contenido específico)
+            await _audit.LogAsync(
+                userId: voterId.Value,
+                action: AuditActions.VoteCast,
+                details: $"Voto emitido en elección {election.ElectionId}"
+            );
 
             // Email de confirmación
             await SendVoteEmailConfirmationSafe(voterId.Value, election, candidate);
@@ -135,6 +168,13 @@ public class VotesController : ControllerBase
                                            (sql.Number == 2601 || sql.Number == 2627))
         {
             await tx.RollbackAsync(ct);
+
+            await _audit.LogAsync(
+                userId: voterId.Value,
+                action: AuditActions.VoteAttempt,
+                details: $"Colisión por índice único en elección {election.ElectionId}"
+            );
+
             return Conflict(new { message = "Ya has emitido tu voto en esta elección." });
         }
         catch
@@ -158,6 +198,9 @@ public class VotesController : ControllerBase
                 <p>Gracias por participar.</p>";
             await _mail.SendAsync(user.Email, "Confirmación de voto", body);
         }
-        catch { /* no romper si falla el correo */ }
+        catch
+        {
+            // No romper si falla el correo
+        }
     }
 }
