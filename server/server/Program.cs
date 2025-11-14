@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+ï»¿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -16,7 +16,9 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 builder.Services.AddScoped<IMailSender, SmtpMailSender>();
 builder.Services.AddSingleton<IEmailDomainValidator, EmailDomainValidator>();
 
-// Autenticación JWT
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuditService, AuditService>();
+// AutenticaciÃ³n JWT
 var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!);
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
@@ -33,22 +35,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Autorización (solo ADMIN para registrar votantes)
+// AutorizaciÃ³n (solo ADMIN para registrar votantes)
 builder.Services.AddAuthorization(opt =>
 {
     opt.AddPolicy("AdminOnly", p => p.RequireRole(nameof(UserRole.ADMIN)));
 });
 
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
-
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// Swagger con botón Authorize (Bearer JWT)
+// Swagger con botÃ³n Authorize (Bearer JWT)
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Votaciones API", Version = "v1" });
-
     var securityScheme = new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -59,7 +59,6 @@ builder.Services.AddSwaggerGen(c =>
         BearerFormat = "JWT",
         Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
     };
-
     c.AddSecurityDefinition("Bearer", securityScheme);
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -68,21 +67,16 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 builder.Services.Configure<SmtpOptions>(builder.Configuration.GetSection("Smtp"));
-builder.Services.AddScoped<IMailSender, SmtpMailSender>();
-
 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
     // Crea la BD y tablas si no existen
     await db.Database.EnsureCreatedAsync();
-
-    // Ver qué cadena está usando
+    // Ver quÃ© cadena estÃ¡ usando
     Console.WriteLine($"[DB] {db.Database.GetDbConnection().ConnectionString}");
-
     // Seed admin si no existe
     var adminEmail = "admin@utn.ac.cr";
     if (!await db.Users.AnyAsync(u => u.Email == adminEmail))
@@ -99,8 +93,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -108,10 +100,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

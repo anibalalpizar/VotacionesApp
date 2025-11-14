@@ -17,12 +17,14 @@ public class AuthController : ControllerBase
     private readonly AppDbContext _db;
     private readonly IJwtTokenService _jwt;
     private readonly IMailSender _email;
+    private readonly IAuditService _audit;
 
-    public AuthController(AppDbContext db, IJwtTokenService jwt, IMailSender email)
+    public AuthController(AppDbContext db, IJwtTokenService jwt, IMailSender email, IAuditService audit)
     {
         _db = db;
         _jwt = jwt;
         _email = email;
+        _audit = audit;
     }
 
     private bool IsValidPassword(string password)
@@ -44,36 +46,49 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginRequest req)
     {
-        // Busca el usuario por Email o Identificación
         var user = await _db.Users
             .FirstOrDefaultAsync(u => u.Email == req.UserOrEmail || u.Identification == req.UserOrEmail);
 
         if (user is null)
+        {
             return Unauthorized(new { error = "Credenciales inválidas." });
+        }
 
         bool valid = false;
         bool isFirstTime = false;
 
-        // 1) Si tiene PasswordHash, valida contra él
         if (!string.IsNullOrEmpty(user.PasswordHash))
         {
             valid = BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash);
             isFirstTime = false;
         }
-        // 2) Si no tiene PasswordHash, pero tiene TemporalPassword → valida contra esa
         else if (!string.IsNullOrEmpty(user.TemporalPassword))
         {
             valid = BCrypt.Net.BCrypt.Verify(req.Password, user.TemporalPassword);
-            isFirstTime = valid; // sólo true si pasó usando la temporal
+            isFirstTime = valid;
         }
 
         if (!valid)
-            return Unauthorized(new { error = "Credenciales inválidas." });
+        {
+            //Registrar intento fallido
+            await _audit.LogAsync(
+                userId: user.UserId,
+                action: AuditActions.LoginFailed,
+                details: "Credenciales incorrectas"
+            );
 
-        // Genera el token
+            return Unauthorized(new { error = "Credenciales inválidas." });
+        }
+
+        //Login exitoso
+        await _audit.LogAsync(
+            userId: user.UserId,
+            action: AuditActions.LoginSuccess,
+            details: isFirstTime ? "Primera vez (contraseña temporal)" : null
+        );
+
         var token = _jwt.CreateToken(user);
 
-        // Arma la respuesta
         var resp = new LoginResponse
         {
             Token = token,
@@ -92,7 +107,6 @@ public class AuthController : ControllerBase
         return Ok(resp);
     }
 
-    //CAMBIO DE CONTRASEÑA (primera vez)
     [HttpPost("change-password")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -100,35 +114,36 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest req, CancellationToken ct)
     {
-        // Validar que la nueva contraseña cumpla requisitos mínimos
         if (!IsValidPassword(req.NewPassword))
         {
             return BadRequest(new { error = "La nueva contraseña no cumple con los requisitos mínimos de seguridad. La contraseña debe de tener AL MENOS una letra mayúscula, una letra minúscula, un número y un caracter especial. Por ejemplo: Ejemplo123!" });
         }
 
-        // 1) Buscar usuario
         var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == req.UserId, ct);
         if (user is null)
             return NotFound(new { error = "Usuario no encontrado." });
 
-        // 2) Validar que tenga una contraseña temporal vigente
         if (string.IsNullOrEmpty(user.TemporalPassword))
             return BadRequest(new { error = "El usuario no tiene una contraseña temporal vigente." });
 
-        // 3) Verificar que la temporal ingresada coincida
         var temporalOk = BCrypt.Net.BCrypt.Verify(req.TemporalPassword, user.TemporalPassword);
         if (!temporalOk)
             return BadRequest(new { error = "La clave temporal no coincide con la enviada por correo." });
 
-        // Validación mínima de seguridad
         if (string.IsNullOrWhiteSpace(req.NewPassword) || req.NewPassword.Length < 8)
             return BadRequest(new { error = "La nueva contraseña debe tener al menos 8 caracteres." });
 
-        // 4) Guardar nueva contraseña y limpiar la temporal
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.NewPassword);
         user.TemporalPassword = null;
 
         await _db.SaveChangesAsync(ct);
+
+        //Registrar cambio de contraseña
+        await _audit.LogAsync(
+            userId: user.UserId,
+            action: AuditActions.PasswordChanged,
+            details: "Cambio de temporal a permanente"
+        );
 
         return Ok(new { message = "Contraseña cambiada con éxito.", isFirstTime = false });
     }
@@ -141,32 +156,25 @@ public class AuthController : ControllerBase
     {
         var email = (req.Email ?? "").Trim().ToLowerInvariant();
 
-        // 1) Validar formato de email
         if (!new EmailAddressAttribute().IsValid(email))
             return BadRequest(new { message = "El correo ingresado no tiene un formato válido." });
 
-        // 2) Buscar usuario por email
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
 
-        // Por seguridad, no revelamos si existe o no el correo
         if (user is null)
             return Ok(new { message = "Si el correo existe, se enviará una contraseña temporal." });
 
-        // 3) Generar contraseña temporal
         var tempPlain = PasswordGenerator.New(10);
         var tempHash = BCrypt.Net.BCrypt.HashPassword(tempPlain);
 
-        // 4) Transacción: solo persistimos si el correo se envía bien
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
         try
         {
-            // Forzar primer login con temporal
-            user.PasswordHash = string.Empty;     // se limpia la contraseña oficial
-            user.TemporalPassword = tempHash; // se guarda solo el hash de la temporal
+            user.PasswordHash = string.Empty;
+            user.TemporalPassword = tempHash;
 
             await _db.SaveChangesAsync(ct);
 
-            // 5) Enviar correo con la clave temporal
             var body = $@"
             <p>Hola {user.FullName},</p>
             <p>Solicitaste recuperar tu contraseña.</p>
@@ -177,16 +185,19 @@ public class AuthController : ControllerBase
 
             await tx.CommitAsync(ct);
 
-            // 6) Mensaje genérico 
+            //Registrar recuperación de contraseña
+            await _audit.LogAsync(
+                userId: user.UserId,
+                action: AuditActions.PasswordRecovery,
+                details: "Contraseña temporal generada"
+            );
+
             return Ok(new { message = "Si el correo existe, se enviará una contraseña temporal." });
         }
         catch
         {
             await tx.RollbackAsync(ct);
-            // También respondemos genérico
             return Ok(new { message = "Si el correo existe, se enviará una contraseña temporal." });
         }
     }
-
-
 }

@@ -20,7 +20,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.ToTable("Users");
             e.HasKey(x => x.UserId);
-            e.Property(x => x.UserId).ValueGeneratedOnAdd(); 
+            e.Property(x => x.UserId).ValueGeneratedOnAdd();
 
             e.HasIndex(x => x.Identification).IsUnique();
             e.HasIndex(x => x.Email).IsUnique();
@@ -55,10 +55,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.ToTable("Candidates");
             e.HasKey(x => x.CandidateId);
-            e.Property(x => x.CandidateId).ValueGeneratedOnAdd();   
+            e.Property(x => x.CandidateId).ValueGeneratedOnAdd();
 
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
-            e.Property(x => x.Party).HasMaxLength(200).IsRequired();  
+            e.Property(x => x.Party).HasMaxLength(200).IsRequired();
 
             e.HasOne(x => x.Election)
                 .WithMany()
@@ -75,17 +75,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.ToTable("Votes");
             e.HasKey(x => x.VoteId);
             e.Property(x => x.VoteId).ValueGeneratedOnAdd();
-
             e.HasOne(x => x.Voter)
                 .WithMany()
                 .HasForeignKey(x => x.VoterId)
                 .OnDelete(DeleteBehavior.NoAction);
-
             e.HasOne(x => x.Election)
                 .WithMany()
                 .HasForeignKey(x => x.ElectionId)
                 .OnDelete(DeleteBehavior.NoAction);
-
             e.HasOne(x => x.Candidate)
                 .WithMany()
                 .HasForeignKey(x => x.CandidateId)
@@ -100,9 +97,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.ToTable("AuditLog");
             e.HasKey(x => x.AuditId);
-            e.Property(x => x.AuditId).ValueGeneratedOnAdd();    
-            e.Property(x => x.Action).HasMaxLength(200).IsRequired();
-
+            e.Property(x => x.AuditId).ValueGeneratedOnAdd();
+            e.Property(x => x.Action).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Details).HasMaxLength(255);
+            e.Property(x => x.Timestamp).HasDefaultValueSql("GETDATE()");
             e.HasOne(x => x.User)
                 .WithMany()
                 .HasForeignKey(x => x.UserId)
