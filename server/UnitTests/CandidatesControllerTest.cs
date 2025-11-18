@@ -2,10 +2,12 @@
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using Server.Controllers;
 using Server.Data;
 using Server.DTOs;
 using Server.Models;
+using Server.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -56,7 +58,8 @@ namespace UnitTests
             // Arrange
             var db = GetInMemoryDb(nameof(GetAll_ReturnsCandidates_WhenExists));
             await SeedSampleData(db);
-            var controller = new CandidatesController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new CandidatesController(db, mockAudit.Object);
 
             // Act
             var result = await controller.GetAll(null, 1, 20, CancellationToken.None);
@@ -83,7 +86,8 @@ namespace UnitTests
         {
             var db = GetInMemoryDb(nameof(GetById_ReturnsOk_WhenCandidateExists));
             await SeedSampleData(db);
-            var controller = new CandidatesController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new CandidatesController(db, mockAudit.Object);
 
             var result = await controller.GetById(1, CancellationToken.None);
 
@@ -104,7 +108,8 @@ namespace UnitTests
         {
             var db = GetInMemoryDb(nameof(GetById_ReturnsNotFound_WhenCandidateDoesNotExist));
             await SeedSampleData(db);
-            var controller = new CandidatesController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new CandidatesController(db, mockAudit.Object);
 
             var result = await controller.GetById(99, CancellationToken.None);
 
@@ -120,7 +125,8 @@ namespace UnitTests
         {
             var db = GetInMemoryDb(nameof(Create_ReturnsCreated_WhenValidData));
             await SeedSampleData(db);
-            var controller = new CandidatesController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new CandidatesController(db, mockAudit.Object);
 
             var dto = new CandidateCreateDto
             {
@@ -146,7 +152,8 @@ namespace UnitTests
         {
             var db = GetInMemoryDb(nameof(Create_ReturnsBadRequest_WhenMissingName));
             await SeedSampleData(db);
-            var controller = new CandidatesController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new CandidatesController(db, mockAudit.Object);
 
             var dto = new CandidateCreateDto { ElectionId = 1, Party = "Partido X" };
 
@@ -161,7 +168,8 @@ namespace UnitTests
         {
             var db = GetInMemoryDb(nameof(Create_ReturnsNotFound_WhenElectionDoesNotExist));
             await SeedSampleData(db);
-            var controller = new CandidatesController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new CandidatesController(db, mockAudit.Object);
 
             var dto = new CandidateCreateDto
             {
@@ -180,7 +188,8 @@ namespace UnitTests
         {
             var db = GetInMemoryDb(nameof(Create_ReturnsConflict_WhenDuplicateCandidate));
             await SeedSampleData(db);
-            var controller = new CandidatesController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new CandidatesController(db, mockAudit.Object);
 
             var dto = new CandidateCreateDto
             {
@@ -202,7 +211,8 @@ namespace UnitTests
         {
             var db = GetInMemoryDb(nameof(Update_ReturnsOk_WhenValidChanges));
             await SeedSampleData(db);
-            var controller = new CandidatesController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new CandidatesController(db, mockAudit.Object);
 
             var dto = new CandidateUpdateDto
             {
@@ -229,7 +239,8 @@ namespace UnitTests
         {
             var db = GetInMemoryDb(nameof(Update_ReturnsNotFound_WhenCandidateDoesNotExist));
             await SeedSampleData(db);
-            var controller = new CandidatesController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new CandidatesController(db, mockAudit.Object);
 
             var dto = new CandidateUpdateDto { Name = "Fake", Party = "X" };
 
@@ -243,7 +254,8 @@ namespace UnitTests
         {
             var db = GetInMemoryDb(nameof(Update_ReturnsConflict_WhenDuplicateInElection));
             await SeedSampleData(db);
-            var controller = new CandidatesController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new CandidatesController(db, mockAudit.Object);
 
             var dto = new CandidateUpdateDto
             {
@@ -255,7 +267,7 @@ namespace UnitTests
             Assert.IsInstanceOfType(result, typeof(ConflictObjectResult));
         }
 
-        // ───────────────────────────────
+       // ───────────────────────────────
         // DELETE: api/candidates/{id}
         // ───────────────────────────────
 
@@ -267,7 +279,8 @@ namespace UnitTests
         {
             var db = GetInMemoryDb(nameof(Delete_ReturnsOk_WhenCandidateExists));
             await SeedSampleData(db);
-            var controller = new CandidatesController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new CandidatesController(db, mockAudit.Object);
 
             var result = await controller.Delete(1, CancellationToken.None);
 
@@ -284,7 +297,8 @@ namespace UnitTests
         {
             var db = GetInMemoryDb(nameof(Delete_ReturnsNotFound_WhenCandidateDoesNotExist));
             await SeedSampleData(db);
-            var controller = new CandidatesController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new CandidatesController(db, mockAudit.Object);
 
             var result = await controller.Delete(999, CancellationToken.None);
             Assert.IsInstanceOfType(result, typeof(NotFoundObjectResult));
