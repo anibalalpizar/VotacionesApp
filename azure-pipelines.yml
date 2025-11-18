@@ -13,6 +13,10 @@ variables:
   # SonarQube variables
   sonarQubeProjectKey: 'votaciones-app'
   sonarQubeProjectName: 'VotacionesApp'
+  # K6 Performance Testing variables
+  k6Version: '0.54.0'
+  apiUrl: 'https://localhost:7290'
+  k6ResultsPath: '$(Build.SourcesDirectory)/k6-results'
 
 steps:
 
@@ -109,14 +113,194 @@ steps:
     failIfCoverageEmpty: false
   condition: succeededOrFailed()
 
-# Step 12: Generate build artifacts
+# ============================================
+# PERFORMANCE TESTING WITH K6
+# ============================================
+
+# Step 12: Install K6 Performance Testing Tool
+# Downloads and installs K6 binary for Windows agents
+- powershell: |
+    Write-Host "Installing K6 v$(k6Version)..."
+    $k6Zip = "k6-v$(k6Version)-windows-amd64.zip"
+    $k6Url = "https://github.com/grafana/k6/releases/download/v$(k6Version)/$k6Zip"
+    
+    # Download K6
+    Invoke-WebRequest -Uri $k6Url -OutFile "$env:TEMP\$k6Zip"
+    
+    # Extract K6
+    Expand-Archive -Path "$env:TEMP\$k6Zip" -DestinationPath "$env:TEMP\k6" -Force
+    
+    # Move k6.exe to a directory in PATH
+    Move-Item -Path "$env:TEMP\k6\k6-v$(k6Version)-windows-amd64\k6.exe" -Destination "$(Agent.TempDirectory)\k6.exe" -Force
+    
+    # Verify installation
+    & "$(Agent.TempDirectory)\k6.exe" version
+    
+    Write-Host "K6 installed successfully"
+  displayName: 'Install K6 Performance Testing Tool'
+  condition: succeeded()
+
+# Step 13: Create K6 Results Directory
+# Ensures output directory exists for test results
+- powershell: |
+    Write-Host "Creating K6 results directory..."
+    New-Item -ItemType Directory -Force -Path "$(k6ResultsPath)"
+    Write-Host "Directory created: $(k6ResultsPath)"
+  displayName: 'Create K6 results directory'
+  condition: succeeded()
+
+# Step 14: Start API for Performance Testing
+# Launches the API application in background for K6 tests
+- powershell: |
+    Write-Host "Starting API server for performance testing..."
+    
+    # Navigate to API directory
+    Set-Location "$(Build.SourcesDirectory)/server/server"
+    
+    # Start API in background
+    Start-Process -FilePath "dotnet" -ArgumentList "run --no-build --configuration $(buildConfiguration) --urls $(apiUrl)" -WindowStyle Hidden -PassThru
+    
+    Write-Host "Waiting for API to be ready..."
+    Start-Sleep -Seconds 15
+    
+    # Verify API is running
+    try {
+        $response = Invoke-WebRequest -Uri "$(apiUrl)/health" -Method GET -UseBasicParsing -SkipCertificateCheck
+        Write-Host "API is ready! Status: $($response.StatusCode)"
+    } catch {
+        Write-Warning "Health endpoint not available, but continuing..."
+    }
+  displayName: 'Start API for performance testing'
+  condition: succeeded()
+
+# Step 15: Run K6 Smoke Test
+# Executes smoke test to verify basic API availability with minimal load
+- powershell: |
+    Write-Host "========================================="
+    Write-Host "Running K6 Smoke Test"
+    Write-Host "========================================="
+    
+    $env:TARGET_URL = "$(apiUrl)"
+    
+    # Run smoke test with summary export
+    & "$(Agent.TempDirectory)\k6.exe" run `
+      --out json="$(k6ResultsPath)/smoke-test-results.json" `
+      --summary-export="$(k6ResultsPath)/smoke-test-summary.json" `
+      "$(Build.SourcesDirectory)/k6-tests/smoke-test.js"
+    
+    $smokeExitCode = $LASTEXITCODE
+    
+    Write-Host "Smoke Test Exit Code: $smokeExitCode"
+    
+    # K6 exits with code 0 if all thresholds pass
+    # Exit with non-zero if thresholds fail
+    if ($smokeExitCode -ne 0) {
+        Write-Error "❌ Smoke Test FAILED - Thresholds not met"
+        exit $smokeExitCode
+    }
+    
+    Write-Host "✅ Smoke Test PASSED"
+  displayName: 'Run K6 Smoke Test'
+  env:
+    TARGET_URL: $(apiUrl)
+  condition: succeeded()
+
+# Step 16: Run K6 Vote Test (HU6 - Emisión de Voto)
+# Executes full voting flow performance test with progressive load
+- powershell: |
+    Write-Host "========================================="
+    Write-Host "Running K6 Vote Test (HU6 - Emisión de Voto)"
+    Write-Host "========================================="
+    
+    $env:TARGET_URL = "$(apiUrl)"
+    
+    # Run vote test with summary export
+    & "$(Agent.TempDirectory)\k6.exe" run `
+      --out json="$(k6ResultsPath)/vote-test-results.json" `
+      --summary-export="$(k6ResultsPath)/vote-test-summary.json" `
+      "$(Build.SourcesDirectory)/k6-tests/vote-test.js"
+    
+    $voteExitCode = $LASTEXITCODE
+    
+    Write-Host "Vote Test Exit Code: $voteExitCode"
+    
+    # K6 exits with code 0 if all thresholds pass
+    # Exit with non-zero if thresholds fail
+    if ($voteExitCode -ne 0) {
+        Write-Error "❌ Vote Test FAILED - Thresholds not met"
+        exit $voteExitCode
+    }
+    
+    Write-Host "✅ Vote Test PASSED"
+  displayName: 'Run K6 Vote Test (HU6)'
+  env:
+    TARGET_URL: $(apiUrl)
+  condition: succeeded()
+
+# Step 17: Stop API Server
+# Gracefully stops the API application after tests complete
+- powershell: |
+    Write-Host "Stopping API server..."
+    
+    # Find and stop dotnet processes running the API
+    Get-Process -Name "dotnet" -ErrorAction SilentlyContinue | Where-Object {
+        $_.Path -like "*server*"
+    } | Stop-Process -Force
+    
+    Write-Host "API server stopped"
+  displayName: 'Stop API server'
+  condition: always()
+
+# Step 18: Display K6 Test Summaries
+# Shows summary statistics from both performance tests
+- powershell: |
+    Write-Host "========================================="
+    Write-Host "K6 Performance Test Summaries"
+    Write-Host "========================================="
+    
+    # Display Smoke Test Summary
+    if (Test-Path "$(k6ResultsPath)/smoke-test-summary.json") {
+        Write-Host ""
+        Write-Host "📊 SMOKE TEST SUMMARY:"
+        Write-Host "========================================="
+        Get-Content "$(k6ResultsPath)/smoke-test-summary.json" | ConvertFrom-Json | ConvertTo-Json -Depth 10
+    }
+    
+    # Display Vote Test Summary
+    if (Test-Path "$(k6ResultsPath)/vote-test-summary.json") {
+        Write-Host ""
+        Write-Host "📊 VOTE TEST SUMMARY:"
+        Write-Host "========================================="
+        Get-Content "$(k6ResultsPath)/vote-test-summary.json" | ConvertFrom-Json | ConvertTo-Json -Depth 10
+    }
+    
+    Write-Host ""
+    Write-Host "========================================="
+  displayName: 'Display K6 test summaries'
+  condition: succeededOrFailed()
+
+# Step 19: Publish K6 Performance Test Results
+# Uploads K6 test results and summaries as pipeline artifacts
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish K6 performance test results'
+  inputs:
+    PathtoPublish: '$(k6ResultsPath)'
+    ArtifactName: 'K6-Performance-Results-$(Build.BuildId)'
+    publishLocation: 'Container'
+  condition: succeededOrFailed()
+
+# ============================================
+# BUILD ARTIFACTS GENERATION
+# ============================================
+
+# Step 20: Generate build artifacts
 - script: |
     echo Generating artifacts...
     dotnet publish server/server.sln --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/VotacionesApp --no-build
   displayName: 'Generate build artifacts'
   condition: succeeded()
 
-# Step 13: Publish artifacts to Azure DevOps
+# Step 21: Publish artifacts to Azure DevOps
 - task: PublishBuildArtifacts@1
   displayName: 'Publish artifacts to Azure DevOps'
   inputs:
