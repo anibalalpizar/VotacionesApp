@@ -5,18 +5,17 @@ export const options = {
   vus: 3,
   duration: '10s',
   thresholds: {
-    http_req_failed: ['rate<0.01'],      // < 1% de fallos
-    http_req_duration: ['p(95)<1000'],   // 95% bajo 1 segundo
+    http_req_failed: ['rate<0.01'],
+    http_req_duration: ['p(95)<1000'],
   },
   insecureSkipTLSVerify: true,
 };
 
 const BASE_URL = __ENV.TARGET_URL || 'https://localhost:7290';
 
-// Credenciales del usuario Admin de tus datos de prueba
 const loginPayload = JSON.stringify({
-  UserOrEmail: '123456789',  // Identification del Admin Principal
-  Password: 'Admin123!'      // Ajusta según tu password real
+  UserOrEmail: '123456789',
+  Password: 'Admin123!'
 });
 
 const headers = {
@@ -57,16 +56,16 @@ export default function () {
 
 export function setup() {
   console.log('='.repeat(60));
-  console.log('SMOKE TEST - Sistema de Votaciones');
+  console.log('SMOKE TEST - Voting System');
   console.log(`Target URL: ${BASE_URL}`);
   console.log(`VUs: ${options.vus}, Duration: ${options.duration}`);
-  console.log(`Thresholds: < 1% fallos, 95% < 1s`);
+  console.log(`Thresholds: < 1% failures, 95% < 1s`);
   console.log('='.repeat(60));
 }
 
 export function teardown(data) {
   console.log('='.repeat(60));
-  console.log('Smoke Test completado');
-  console.log('Revisa que todos los thresholds pasaron ✓');
+  console.log('Smoke test completed');
+  console.log('Verify all thresholds passed ✓');
   console.log('='.repeat(60));
 }
