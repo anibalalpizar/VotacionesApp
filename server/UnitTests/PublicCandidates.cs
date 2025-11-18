@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -7,12 +6,11 @@ using Moq;
 using Server.Controllers;
 using Server.Data;
 using Server.Models;
+using Server.Services;
 using System;
-using System.Collections.Generic;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -22,6 +20,8 @@ namespace UnitTests
     public class PublicCandidates
     {
         public static IConfiguration configuration { get; set; }
+        public ControllerContext ControllerContext { get; set; }
+        public TestContext TestContext { get; set; }
 
         public static AppDbContext GetInMemoryDb(string name)
         {
@@ -31,9 +31,9 @@ namespace UnitTests
 
             // Crear configuración en memoria
             var inMemorySettings = new Dictionary<string, string>
-                {
-                    {"App:TimeZoneId", "Central Standard Time"}
-                };
+            {
+                {"App:TimeZoneId", "Central Standard Time"}
+            };
 
             configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(inMemorySettings)
@@ -42,18 +42,13 @@ namespace UnitTests
             return new AppDbContext(options);
         }
 
-        public ControllerContext ControllerContext { get; set; }
-        public TestContext TestContext { get; set; } // 🧩 Contexto del test actual
-
         [DataTestMethod]
         [DataRow(ClaimTypes.NameIdentifier, "101")]
         [DataRow("sub", "202")]
         [DataRow("id", "303")]
         public void GetUserId_Returns_ExpectedValue(string claimType, string userIdValue)
         {
-            // Arrange
-            // Arrange
-              var db = GetInMemoryDb(nameof(GetUserId_Returns_ExpectedValue));
+            var db = GetInMemoryDb(nameof(GetUserId_Returns_ExpectedValue));
             var controller = new PublicCandidatesController(db);
 
             var claims = new List<Claim> { new Claim(claimType, userIdValue) };
@@ -63,14 +58,12 @@ namespace UnitTests
                 HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
             };
 
-            // Act (usa reflexión porque GetUserId es privado)
             var method = typeof(PublicCandidatesController).GetMethod(
                 "GetUserId",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
             var result = method?.Invoke(controller, null);
 
-            // Assert
             Assert.IsNotNull(result);
             Assert.AreEqual(int.Parse(userIdValue), (int)result!);
         }
@@ -79,20 +72,18 @@ namespace UnitTests
         [TestMethod]
         public void GetUserId_Returns_Null_When_NoValidClaims()
         {
-            // Arrange
             var db = GetInMemoryDb(nameof(GetUserId_Returns_Null_When_NoValidClaims));
-            var controller = new ElectionsController(db, configuration);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ElectionsController(db, configuration, mockAudit.Object);
             controller.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() }
             };
 
-            // Act
             var result = controller.GetType()
                 .GetMethod("GetUserId", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
                 ?.Invoke(controller, null);
 
-            // Assert
             Assert.IsNull(result);
         }
 
@@ -100,18 +91,15 @@ namespace UnitTests
         [TestMethod]
         public async Task ReturnsUnauthorized_WhenUserIdIsNull()
         {
-            // Arrange
             var db = GetInMemoryDb(nameof(ReturnsUnauthorized_WhenUserIdIsNull));
-            var controller = new Server.Controllers.PublicCandidatesController(db); // sin claims
+            var controller = new Server.Controllers.PublicCandidatesController(db);
             controller.ControllerContext = new Microsoft.AspNetCore.Mvc.ControllerContext
             {
                 HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() }
             };
 
-            // Act
             var result = await controller.GetActiveElectionsWithCandidates(CancellationToken.None);
 
-            // Assert
             var notFound = result as UnauthorizedObjectResult;
             Assert.IsInstanceOfType(result, typeof(UnauthorizedObjectResult));
             Assert.IsTrue(notFound.Value!.ToString().Contains("No se pudo identificar el usuario"));
@@ -121,11 +109,9 @@ namespace UnitTests
         [TestMethod]
         public async Task ReturnsNotFound_WhenNoActiveElections()
         {
-            // Arrange
             var db = GetInMemoryDb(nameof(ReturnsNotFound_WhenNoActiveElections));
             var controller = new PublicCandidatesController(db);
 
-            // Crear usuario falso con Claim de ID
             var claims = new List<Claim> { new Claim(ClaimTypes.NameIdentifier, "5") };
             var identity = new ClaimsIdentity(claims, "TestAuth");
             controller.ControllerContext = new ControllerContext
@@ -136,10 +122,8 @@ namespace UnitTests
                 }
             };
 
-            // Act
             var result = await controller.GetActiveElectionsWithCandidates(CancellationToken.None);
 
-            // Condiciones de éxito (si cualquiera de estas es cierta, el test pasa)
             bool isUnauthorized =
                 result is UnauthorizedObjectResult unauthorized &&
                 unauthorized.Value!.ToString().Contains("No se pudo identificar el usuario");
@@ -152,17 +136,14 @@ namespace UnitTests
                 result is OkObjectResult ok &&
                 ok.Value?.ToString()?.Contains("No hay elecciones activas") == true;
 
-            // ✅ El test se considera correcto si cualquiera de las condiciones anteriores es verdadera
             Assert.IsTrue(isUnauthorized || isNotFound || isOkWithEmpty,
                 "El resultado no fue Unauthorized, NotFound ni un Ok con mensaje esperado.");
         }
-
 
         [Fact]
         [TestMethod]
         public async Task ReturnsActiveElectionsWithCandidates_AndVoteStatus()
         {
-            // Arrange
             var db = GetInMemoryDb(nameof(ReturnsActiveElectionsWithCandidates_AndVoteStatus));
             var now = DateTimeOffset.UtcNow;
 
@@ -184,7 +165,6 @@ namespace UnitTests
 
             var controller = new PublicCandidatesController(db);
 
-            // Simular usuario autenticado (VoterId = 5)
             var claims = new List<Claim> { new Claim(ClaimTypes.NameIdentifier, "5") };
             var identity = new ClaimsIdentity(claims, "TestAuth");
             controller.ControllerContext = new ControllerContext
@@ -192,22 +172,18 @@ namespace UnitTests
                 HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
             };
 
-            // Act
             var result = await controller.GetActiveElectionsWithCandidates(CancellationToken.None);
 
-            // Assert
             var ok = result as OkObjectResult;
             Assert.IsNotNull(ok);
             Assert.IsInstanceOfType(ok, typeof(OkObjectResult));
 
-            // Serializa para acceder dinámicamente sin perder propiedades
             var json = System.Text.Json.JsonSerializer.Serialize(ok.Value);
             var data = System.Text.Json.JsonSerializer.Deserialize<List<dynamic>>(json);
             Assert.IsNotNull(data);
 
             var electionData = data.First();
 
-            // Usa el JsonElement para leer propiedades
             var electionName = electionData.GetProperty("electionName").GetString();
             var hasVoted = electionData.GetProperty("hasVoted").GetBoolean();
             var canVote = electionData.GetProperty("canVote").GetBoolean();
@@ -215,9 +191,7 @@ namespace UnitTests
             Assert.AreEqual("Elección Estudiantil", electionName);
             Assert.IsTrue(hasVoted);
             Assert.IsFalse(canVote);
-
         }
-
 
         public void TestCleanup()
         {
@@ -241,5 +215,4 @@ namespace UnitTests
             Console.WriteLine(new string('-', 80));
         }
     }
-
 }
