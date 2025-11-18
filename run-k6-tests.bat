@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo Ejecutando Pruebas de Rendimiento K6
+echo Running K6 Performance Tests
 echo ========================================
 
 set TARGET_URL=https://localhost:7290
@@ -11,12 +11,12 @@ if not exist "%RESULTS_DIR%" mkdir %RESULTS_DIR%
 
 k6 version >nul 2>&1
 if errorlevel 1 (
-    echo ERROR: K6 no esta instalado
+    echo ERROR: K6 is not installed
     echo.
-    echo Para instalar K6 con Chocolatey ejecuta:
+    echo To install K6 with Chocolatey run:
     echo   choco install k6
     echo.
-    echo O descarga desde: https://k6.io/docs/get-started/installation/
+    echo Or download from: https://k6.io/docs/get-started/installation/
     echo.
     pause
     exit /b 1
@@ -27,22 +27,22 @@ echo K6 Version:
 k6 version
 echo.
 echo Target URL: %TARGET_URL%
-echo Resultados: %RESULTS_DIR%
+echo Results: %RESULTS_DIR%
 echo.
 
-echo Verificando que la API esta corriendo...
+echo Verifying API is running...
 curl -s -k %TARGET_URL%/swagger/index.html >nul 2>&1
 if errorlevel 1 (
     echo.
-    echo WARNING: No se pudo conectar a %TARGET_URL%
-    echo Asegurate de que tu API esta corriendo.
+    echo WARNING: Could not connect to %TARGET_URL%
+    echo Make sure your API is running.
     echo.
     pause
 )
 
 echo.
 echo ========================================
-echo Ejecutando Smoke Test
+echo Running Smoke Test
 echo ========================================
 k6 run ^
   --out json=%RESULTS_DIR%/smoke-test-results.json ^
@@ -53,16 +53,16 @@ k6 run ^
 if errorlevel 1 (
     echo.
     echo ========================================
-    echo ERROR: Smoke Test fallo
+    echo ERROR: Smoke Test failed
     echo ========================================
-    echo Revisa los resultados en %RESULTS_DIR%
+    echo Check results in %RESULTS_DIR%
     pause
     exit /b 1
 )
 
 echo.
 echo ========================================
-echo Ejecutando Vote Test (HU6)
+echo Running Vote Test (HU6)
 echo ========================================
 k6 run ^
   --out json=%RESULTS_DIR%/vote-test-results.json ^
@@ -73,20 +73,20 @@ k6 run ^
 if errorlevel 1 (
     echo.
     echo ========================================
-    echo ERROR: Vote Test fallo
+    echo ERROR: Vote Test failed
     echo ========================================
-    echo Revisa los resultados en %RESULTS_DIR%
+    echo Check results in %RESULTS_DIR%
     pause
     exit /b 1
 )
 
 echo.
 echo ========================================
-echo Pruebas completadas exitosamente!
+echo Tests completed successfully!
 echo ========================================
-echo Resultados guardados en: %RESULTS_DIR%
+echo Results saved in: %RESULTS_DIR%
 echo.
-echo Archivos generados:
+echo Generated files:
 dir /B %RESULTS_DIR%
 echo.
 pause
