@@ -3,10 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using Server.Controllers;
 using Server.Data;
 using Server.DTOs;
 using Server.Models;
+using Server.Services;
 using System;
 using System.Linq;
 using System.Threading;
@@ -30,9 +32,9 @@ namespace UnitTests
 
             // Crear configuración en memoria
             var inMemorySettings = new Dictionary<string, string>
-                {
-                    {"App:TimeZoneId", "Central Standard Time"}
-                };
+            {
+                {"App:TimeZoneId", "Central Standard Time"}
+            };
 
             configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(inMemorySettings)
@@ -74,7 +76,8 @@ namespace UnitTests
         public async Task Create_ReturnsCreated_WhenValid()
         {
             var db = GetInMemoryDb(nameof(Create_ReturnsCreated_WhenValid));
-            var controller = new ElectionsController(db, configuration);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ElectionsController(db, configuration, mockAudit.Object);
 
             // Simular un Request con cabeceras
             controller.ControllerContext = new ControllerContext
@@ -103,14 +106,15 @@ namespace UnitTests
         public async Task Create_ReturnsBadRequest_WhenInvalidDates()
         {
             var db = GetInMemoryDb(nameof(Create_ReturnsBadRequest_WhenInvalidDates));
-            var controller = new ElectionsController(db, configuration);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ElectionsController(db, configuration, mockAudit.Object);
 
             // Simular un Request con cabeceras
             controller.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext()
             };
-            controller.Request.Headers["X-Client-Offset"] = "0"; // UTC (sin desfase)
+            controller.Request.Headers["X-Client-Offset"] = "0";
 
             var dto = new CreateElectionDto
             {
@@ -128,14 +132,14 @@ namespace UnitTests
         {
             var db = GetInMemoryDb(nameof(Create_ReturnsConflict_WhenDuplicateName));
             await SeedBasicData(db);
-            var controller = new ElectionsController(db, configuration);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ElectionsController(db, configuration, mockAudit.Object);
 
-            // Simular un Request con cabeceras
             controller.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext()
             };
-            controller.Request.Headers["X-Client-Offset"] = "0"; // UTC (sin desfase)
+            controller.Request.Headers["X-Client-Offset"] = "0";
 
             var dto = new CreateElectionDto
             {
@@ -148,15 +152,13 @@ namespace UnitTests
             Assert.IsInstanceOfType(result, typeof(ConflictObjectResult));
         }
 
-        // ────────────────────────────────────────────
-        // GET: /api/elections
-        // ────────────────────────────────────────────
         [TestMethod]
         public async Task GetAll_ReturnsOk_WithItems()
         {
             var db = GetInMemoryDb(nameof(GetAll_ReturnsOk_WithItems));
             await SeedBasicData(db);
-            var controller = new ElectionsController(db, configuration);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ElectionsController(db, configuration, mockAudit.Object);
 
             var result = await controller.GetAll(1, 20, CancellationToken.None);
             var ok = result as OkObjectResult;
@@ -169,15 +171,13 @@ namespace UnitTests
             Assert.AreEqual(2, total);
         }
 
-        // ────────────────────────────────────────────
-        // GET: /api/elections/{id}
-        // ────────────────────────────────────────────
         [TestMethod]
         public async Task GetById_ReturnsOk_WhenExists()
         {
             var db = GetInMemoryDb(nameof(GetById_ReturnsOk_WhenExists));
             await SeedBasicData(db);
-            var controller = new ElectionsController(db, configuration);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ElectionsController(db, configuration, mockAudit.Object);
 
             var result = await controller.GetById(1, CancellationToken.None);
             var ok = result as OkObjectResult;
@@ -192,28 +192,26 @@ namespace UnitTests
         {
             var db = GetInMemoryDb(nameof(GetById_ReturnsNotFound_WhenMissing));
             await SeedBasicData(db);
-            var controller = new ElectionsController(db, configuration);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ElectionsController(db, configuration, mockAudit.Object);
 
             var result = await controller.GetById(99, CancellationToken.None);
             Assert.IsInstanceOfType(result, typeof(NotFoundResult));
         }
 
-        // ────────────────────────────────────────────
-        // PUT: /api/elections/{id}
-        // ────────────────────────────────────────────
         [TestMethod]
         public async Task Update_ReturnsOk_WhenValid()
         {
             var db = GetInMemoryDb(nameof(Update_ReturnsOk_WhenValid));
             await SeedBasicData(db);
-            var controller = new ElectionsController(db, configuration);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ElectionsController(db, configuration, mockAudit.Object);
 
-            // Simular un Request con cabeceras
             controller.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext()
             };
-            controller.Request.Headers["X-Client-Offset"] = "0"; // UTC (sin desfase)
+            controller.Request.Headers["X-Client-Offset"] = "0";
 
             var dto = new UpdateElectionDto
             {
@@ -235,7 +233,8 @@ namespace UnitTests
         {
             var db = GetInMemoryDb(nameof(Update_ReturnsNotFound_WhenMissing));
             await SeedBasicData(db);
-            var controller = new ElectionsController(db, configuration);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ElectionsController(db, configuration, mockAudit.Object);
 
             var dto = new UpdateElectionDto
             {
@@ -253,11 +252,12 @@ namespace UnitTests
         {
             var db = GetInMemoryDb(nameof(Update_ReturnsConflict_WhenDuplicateName));
             await SeedBasicData(db);
-            var controller = new ElectionsController(db, configuration);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ElectionsController(db, configuration, mockAudit.Object);
 
             var dto = new UpdateElectionDto
             {
-                Name = "Municipal", // ya existe
+                Name = "Municipal",
                 StartDateUtc = DateTime.UtcNow,
                 EndDateUtc = DateTime.UtcNow.AddDays(2),
             };
@@ -266,47 +266,19 @@ namespace UnitTests
             Assert.IsInstanceOfType(result, typeof(ConflictObjectResult));
         }
 
-        //[TestMethod]
-        //public async Task Update_ReturnsBadRequest_WhenInvalidStatus()
-        //{
-        //    var db = GetInMemoryDb(nameof(Update_ReturnsBadRequest_WhenInvalidStatus));
-        //    await SeedBasicData(db);
-        //    var controller = new ElectionsController(db, configuration);
-
-        //    // Simular un Request con cabeceras
-        //    controller.ControllerContext = new ControllerContext
-        //    {
-        //        HttpContext = new DefaultHttpContext()
-        //    };
-
-        //    controller.Request.Headers["X-Client-Offset"] = "0"; // UTC (sin desfase)
-
-        //    var dto = new UpdateElectionDto
-        //    {
-        //        Name = "Algo",
-        //        StartDateUtc = DateTime.UtcNow.AddDays(10),
-        //        EndDateUtc = DateTime.UtcNow.AddDays(11),
-        //    };
-
-
-        //    var result = await controller.Update(1, dto, CancellationToken.None);
-        //    Assert.IsInstanceOfType(result, typeof(BadRequestObjectResult));
-        //}
-
         [TestMethod]
         public async Task Update_ReturnsBadRequest_WhenInvalidDateRange()
         {
             var db = GetInMemoryDb(nameof(Update_ReturnsBadRequest_WhenInvalidDateRange));
             await SeedBasicData(db);
-            var controller = new ElectionsController(db, configuration);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ElectionsController(db, configuration, mockAudit.Object);
 
-            // Simular un Request con cabeceras
             controller.ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext()
             };
-
-            controller.Request.Headers["X-Client-Offset"] = "0"; // UTC (sin desfase)
+            controller.Request.Headers["X-Client-Offset"] = "0";
 
             var dto = new UpdateElectionDto
             {
@@ -319,21 +291,18 @@ namespace UnitTests
             Assert.IsInstanceOfType(result, typeof(BadRequestObjectResult));
         }
 
-        // ────────────────────────────────────────────
-        // DELETE: /api/elections/{id}
-        // ────────────────────────────────────────────
         [TestMethod]
         public async Task Delete_ReturnsOk_WhenNoDependencies()
         {
             var db = GetInMemoryDb(nameof(Delete_ReturnsOk_WhenNoDependencies));
             await SeedBasicData(db);
 
-            // Remove candidates and votes so delete is allowed
-            db.Votes.RemoveRange(db.Votes); // primero eliminamos los votos
-            db.Candidates.RemoveRange(db.Candidates); // luego los candidatos
+            db.Votes.RemoveRange(db.Votes);
+            db.Candidates.RemoveRange(db.Candidates);
             await db.SaveChangesAsync();
 
-            var controller = new ElectionsController(db, configuration);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ElectionsController(db, configuration, mockAudit.Object);
             var result = await controller.Delete(1, CancellationToken.None);
 
             var ok = result as OkObjectResult;
@@ -345,7 +314,6 @@ namespace UnitTests
 
             string msg = (string)value.GetValue(selector);
             Assert.AreEqual("La elección fue eliminada con éxito.", msg);
-
         }
 
         [TestMethod]
@@ -353,7 +321,8 @@ namespace UnitTests
         {
             var db = GetInMemoryDb(nameof(Delete_ReturnsBadRequest_WhenHasVotes));
             await SeedBasicData(db);
-            var controller = new ElectionsController(db, configuration);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ElectionsController(db, configuration, mockAudit.Object);
 
             var result = await controller.Delete(1, CancellationToken.None);
             Assert.IsInstanceOfType(result, typeof(BadRequestObjectResult));
@@ -364,36 +333,12 @@ namespace UnitTests
         {
             var db = GetInMemoryDb(nameof(Delete_ReturnsNotFound_WhenMissing));
             await SeedBasicData(db);
-            var controller = new ElectionsController(db, configuration);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ElectionsController(db, configuration, mockAudit.Object);
 
             var result = await controller.Delete(99, CancellationToken.None);
             Assert.IsInstanceOfType(result, typeof(NotFoundResult));
         }
-
-        //[Fact]
-        //[TestMethod]
-        //public async Task RegistrarElecciones()
-        //{
-        //    string nombreEleccion = "Elección de Prueba";
-        //    DateTime fechaInicio = DateTime.UtcNow;
-        //    DateTime fechaFin = DateTime.UtcNow.AddDays(10);
-        //    string status = "Scheduled";
-        //    int candidateCount = 5;
-        //    int voteCount = 0;
-        //    bool isActive = true;
-
-        //    Moq.Mock<EleccionesUTN.IDatabase> bdMock = new Moq.Mock<EleccionesUTN.IDatabase>();
-        //    bdMock.Setup(db => db.RegisrarElecciones(nombreEleccion, fechaInicio, fechaFin, status, candidateCount, voteCount, isActive)).Verifiable();
-
-        //    //Act
-        //    EleccionesUTN.Elecciones elecciones = new EleccionesUTN.Elecciones(bdMock.Object);
-        //    bool resultado = elecciones.RegisrarElecciones(nombreEleccion, fechaInicio, fechaFin, status, candidateCount, voteCount, isActive);
-
-
-        //    //Assert
-        //    Assert.AreEqual(true, resultado);
-
-        //}
 
         [TestCleanup]
         public void TestCleanup()
@@ -417,6 +362,5 @@ namespace UnitTests
             Console.WriteLine($"📝 Descripción: {description}");
             Console.WriteLine(new string('-', 80));
         }
-
     }
 }
