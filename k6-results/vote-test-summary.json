@@ -1,79 +1,47 @@
 {
     "metrics": {
-        "vote_cast_duration": {
-            "med": 14,
-            "max": 2487,
-            "p(90)": 19,
-            "p(95)": 23,
-            "avg": 34.60421836228288,
-            "min": 11,
-            "thresholds": {
-                "p(95)<2500": false
-            }
+        "data_received": {
+            "count": 1651520,
+            "rate": 8939.28080550039
         },
-        "iterations": {
-            "count": 806,
-            "rate": 4.399750586764057
+        "group_duration": {
+            "avg": 61.41162338709677,
+            "min": 6.9921,
+            "med": 21.0642,
+            "max": 192.8316,
+            "p(90)": 137.35176,
+            "p(95)": 144.51392
         },
-        "http_req_duration{expected_response:true}": {
-            "p(90)": 126.68524,
-            "p(95)": 132.29986,
-            "avg": 76.63476949783008,
-            "min": 11.271,
-            "med": 108.0251,
-            "max": 2486.6532,
-            "thresholds": {
-                "p(99)<3000": false
-            }
-        },
-        "data_sent": {
-            "count": 609162,
-            "rate": 3325.2616215066582
-        },
-        "vus_max": {
-            "value": 20,
-            "min": 20,
-            "max": 20
-        },
-        "http_req_sending": {
-            "med": 0,
-            "max": 0.6948,
-            "p(90)": 0.24836,
-            "p(95)": 0.29314,
-            "avg": 0.0935026038437694,
-            "min": 0
-        },
-        "iteration_duration": {
-            "max": 6053.1896,
-            "p(90)": 3994.63745,
-            "p(95)": 4079.6406500000003,
-            "avg": 3188.4596562034717,
-            "min": 2140.6735,
-            "med": 3199.93945
-        },
-        "vote_success": {
-            "passes": 806,
-            "fails": 0,
-            "thresholds": {
-                "rate>0.5": false
-            },
-            "value": 1
+        "http_req_waiting": {
+            "avg": 61.23942852207284,
+            "min": 6.5104,
+            "med": 21.0066,
+            "max": 192.3843,
+            "p(90)": 137.11816,
+            "p(95)": 144.1159
         },
         "login_duration": {
-            "med": 117,
-            "max": 155,
-            "p(90)": 132,
-            "p(95)": 137,
-            "avg": 118.78287841191067,
-            "min": 108,
+            "p(95)": 153.04999999999995,
+            "avg": 129.275,
+            "min": 110,
+            "med": 128,
+            "max": 193,
+            "p(90)": 146.10000000000002,
             "thresholds": {
                 "p(95)<1500": false
             }
         },
-        "vus": {
-            "min": 1,
-            "max": 20,
-            "value": 1
+        "http_reqs": {
+            "count": 2605,
+            "rate": 14.10023886984627
+        },
+        "http_req_receiving": {
+            "min": 0,
+            "med": 0,
+            "max": 6.9998,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0.03165662188099807
         },
         "errors": {
             "passes": 0,
@@ -83,162 +51,240 @@
             },
             "value": 0
         },
-        "http_reqs": {
-            "count": 1613,
-            "rate": 8.804959921154373
+        "data_sent": {
+            "rate": 4247.1110283098415,
+            "count": 784648
+        },
+        "vote_cast_duration": {
+            "p(95)": 33,
+            "avg": 23.01126126126126,
+            "min": 15,
+            "med": 21,
+            "max": 44,
+            "p(90)": 30,
+            "thresholds": {
+                "p(95)<2500": false
+            }
+        },
+        "http_req_sending": {
+            "avg": 0.07399124760076778,
+            "min": 0,
+            "med": 0,
+            "max": 1.3935,
+            "p(90)": 0.22177999999999995,
+            "p(95)": 0.29173999999999817
+        },
+        "vus_max": {
+            "value": 20,
+            "min": 20,
+            "max": 20
+        },
+        "http_req_tls_handshaking": {
+            "min": 0,
+            "med": 0,
+            "max": 4.0001,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0.024803186180422262
+        },
+        "candidates_query_duration": {
+            "max": 32,
+            "p(90)": 12,
+            "p(95)": 14,
+            "avg": 9.230555555555556,
+            "min": 6,
+            "med": 8,
+            "thresholds": {
+                "p(95)<1200": false
+            }
+        },
+        "http_req_duration": {
+            "avg": 61.34507639155469,
+            "min": 6.6452,
+            "med": 21.0783,
+            "max": 192.8316,
+            "p(90)": 137.31196,
+            "p(95)": 144.3626999999999,
+            "thresholds": {
+                "p(95)<2000": false
+            }
         },
         "checks": {
-            "passes": 4836,
+            "passes": 8892,
             "fails": 0,
             "value": 1
         },
-        "http_req_connecting": {
-            "avg": 0.0026457532548047114,
-            "min": 0,
-            "med": 0,
-            "max": 0.5193,
-            "p(90)": 0,
-            "p(95)": 0
-        },
-        "http_req_receiving": {
-            "med": 0,
-            "max": 1.0128,
-            "p(90)": 0,
-            "p(95)": 0,
-            "avg": 0.01832306261624303,
-            "min": 0
-        },
-        "data_received": {
-            "count": 884136,
-            "rate": 4826.275291289363
+        "http_req_duration{expected_response:true}": {
+            "p(90)": 137.31196,
+            "p(95)": 144.3626999999999,
+            "avg": 61.34507639155469,
+            "min": 6.6452,
+            "med": 21.0783,
+            "max": 192.8316,
+            "thresholds": {
+                "p(99)<3000": false
+            }
         },
         "http_req_failed": {
             "passes": 0,
-            "fails": 1613,
+            "fails": 2605,
             "thresholds": {
                 "rate<0.05": false
             },
             "value": 0
         },
-        "group_duration": {
-            "max": 2486.6532,
-            "p(90)": 126.68742,
-            "p(95)": 132.56382999999997,
-            "avg": 76.69008200992553,
-            "min": 11.271,
-            "med": 108.04355
-        },
         "http_req_blocked": {
-            "avg": 0.04478419094854308,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0.02709785028790787,
             "min": 0,
             "med": 0,
-            "max": 4.7331,
-            "p(90)": 0,
-            "p(95)": 0
+            "max": 5.0097
         },
-        "http_req_tls_handshaking": {
-            "avg": 0.041518536887786735,
-            "min": 0,
-            "med": 0,
-            "max": 4.217,
-            "p(90)": 0,
-            "p(95)": 0
+        "iteration_duration": {
+            "p(95)": 4911.096715,
+            "avg": 2367.8329762037024,
+            "min": 623.8961,
+            "med": 1503.50295,
+            "max": 5614.0761,
+            "p(90)": 4632.29378
         },
-        "http_req_duration": {
-            "p(90)": 126.68524,
-            "p(95)": 132.29986,
-            "avg": 76.63476949783008,
-            "min": 11.271,
-            "med": 108.0251,
-            "max": 2486.6532,
+        "iterations": {
+            "count": 1080,
+            "rate": 5.845780414370047
+        },
+        "vote_success": {
+            "passes": 444,
+            "fails": 0,
             "thresholds": {
-                "p(95)<2000": false
-            }
+                "rate>0.5": false
+            },
+            "value": 1
         },
-        "http_req_waiting": {
-            "med": 107.9825,
-            "max": 2486.6532,
-            "p(90)": 126.60037999999999,
-            "p(95)": 132.16233999999997,
-            "avg": 76.52294383137011,
-            "min": 11.1634
+        "vus": {
+            "value": 1,
+            "min": 1,
+            "max": 20
+        },
+        "http_req_connecting": {
+            "avg": 0.00152,
+            "min": 0,
+            "med": 0,
+            "max": 1.1518,
+            "p(90)": 0,
+            "p(95)": 0
         }
     },
     "setup_data": {
-        "candidateCount": 3,
-        "electionName": "Eleccion Gobernador Provincial"
+        "status": "ok"
     },
     "root_group": {
-        "checks": {},
         "name": "",
         "path": "",
         "id": "d41d8cd98f00b204e9800998ecf8427e",
         "groups": {
-                "1. Login del votante": {
-                    "name": "1. Login del votante",
-                    "path": "::1. Login del votante",
-                    "id": "a68f9fd0ff60d4eeead4eecb6188513e",
-                    "groups": {},
-                    "checks": {
-                            "login: status 200": {
-                                "id": "7951a7b3e031995648627f7c1047389b",
-                                "passes": 806,
-                                "fails": 0,
-                                "name": "login: status 200",
-                                "path": "::1. Login del votante::login: status 200"
-                            },
-                            "login: tiene token": {
-                                "name": "login: tiene token",
-                                "path": "::1. Login del votante::login: tiene token",
-                                "id": "09a3651e953ec8cf894af7316fdd6a1e",
-                                "passes": 806,
-                                "fails": 0
-                            },
-                            "login: response < 2s": {
-                                "name": "login: response < 2s",
-                                "path": "::1. Login del votante::login: response < 2s",
-                                "id": "7f7cd40284d029c4310e939cc18eba9a",
-                                "passes": 806,
-                                "fails": 0
-                            }
-                        }
+            "1. Voter login": {
+                "checks": {
+                    "login: status 200": {
+                        "id": "a96be76cee482240c8e69b3fb3803d77",
+                        "passes": 1080,
+                        "fails": 0,
+                        "name": "login: status 200",
+                        "path": "::1. Voter login::login: status 200"
+                    },
+                    "login: has token": {
+                        "name": "login: has token",
+                        "path": "::1. Voter login::login: has token",
+                        "id": "5633d72c420dd7d847b4b146218bc41f",
+                        "passes": 1080,
+                        "fails": 0
+                    },
+                    "login: response < 2s": {
+                        "id": "8ae9e1e5cd3782b2738c37e2cfb24857",
+                        "passes": 1080,
+                        "fails": 0,
+                        "name": "login: response < 2s",
+                        "path": "::1. Voter login::login: response < 2s"
+                    }
                 },
-                "2. Emitir voto": {
-                    "name": "2. Emitir voto",
-                    "path": "::2. Emitir voto",
-                    "id": "f366fd891d3a1f8e92fca1188a80cf3f",
-                    "groups": {},
-                    "checks": {
-                            "vote: status 201 o 409": {
-                                "name": "vote: status 201 o 409",
-                                "path": "::2. Emitir voto::vote: status 201 o 409",
-                                "id": "0152c4d1969dabacac4e18786654a576",
-                                "passes": 806,
-                                "fails": 0
-                            },
-                            "vote: response < 3s": {
-                                "name": "vote: response < 3s",
-                                "path": "::2. Emitir voto::vote: response < 3s",
-                                "id": "0b385e3aed3c84b799bc0534c043df96",
-                                "passes": 806,
-                                "fails": 0
-                            },
-                            "vote: confirmación recibida": {
-                                "passes": 8,
-                                "fails": 0,
-                                "name": "vote: confirmación recibida",
-                                "path": "::2. Emitir voto::vote: confirmación recibida",
-                                "id": "1e699493640c107b7d7f26c07cd7b204"
-                            },
-                            "vote: mensaje de ya votó": {
-                                "name": "vote: mensaje de ya votó",
-                                "path": "::2. Emitir voto::vote: mensaje de ya votó",
-                                "id": "620872d55ad24ab99066e86938fa34f2",
-                                "passes": 798,
-                                "fails": 0
-                            }
+                "name": "1. Voter login",
+                "path": "::1. Voter login",
+                "id": "3bf7790dd0f0399f059972576c20f7af",
+                "groups": {}
+            },
+            "2. Query candidates": {
+                "checks": {
+                    "candidates: status 200": {
+                        "name": "candidates: status 200",
+                        "path": "::2. Query candidates::candidates: status 200",
+                        "id": "662de5937719594896333114629e42c9",
+                        "passes": 1080,
+                        "fails": 0
+                    },
+                    "candidates: is JSON": {
+                        "name": "candidates: is JSON",
+                        "path": "::2. Query candidates::candidates: is JSON",
+                        "id": "558a6c163b14b549fc49441b812e80c7",
+                        "passes": 1080,
+                        "fails": 0
+                    },
+                    "candidates: has data": {
+                        "id": "1c0cd77ff4384caafde41e69e73f60cb",
+                        "passes": 1080,
+                        "fails": 0,
+                        "name": "candidates: has data",
+                        "path": "::2. Query candidates::candidates: has data"
+                    },
+                    "candidates: response < 1.5s": {
+                        "name": "candidates: response < 1.5s",
+                        "path": "::2. Query candidates::candidates: response < 1.5s",
+                        "id": "7c312fb36237ab669d74343c57b2b5c8",
+                        "passes": 1080,
+                        "fails": 0
+                    }
+                },
+                "name": "2. Query candidates",
+                "path": "::2. Query candidates",
+                "id": "bb4bc06220b1391d2222ded1bd3299ce",
+                "groups": {}
+            },
+            "3. Cast vote": {
+                "name": "3. Cast vote",
+                "path": "::3. Cast vote",
+                "id": "b0b4d6c3d1ac4e7fdd975a4203388c1b",
+                "groups": {},
+                "checks": {
+                        "vote: status 201 or 409": {
+                            "fails": 0,
+                            "name": "vote: status 201 or 409",
+                            "path": "::3. Cast vote::vote: status 201 or 409",
+                            "id": "285cb202c3dbad97d9ee71159dc2f04b",
+                            "passes": 444
+                        },
+                        "vote: response < 3s": {
+                            "passes": 444,
+                            "fails": 0,
+                            "name": "vote: response < 3s",
+                            "path": "::3. Cast vote::vote: response < 3s",
+                            "id": "c95cf2216ba206b7a750a495851c99e1"
+                        },
+                        "vote: confirmation received": {
+                            "name": "vote: confirmation received",
+                            "path": "::3. Cast vote::vote: confirmation received",
+                            "id": "3f699b6e90c248f33e73e31e367815a0",
+                            "passes": 436,
+                            "fails": 0
+                        },
+                        "vote: already voted message": {
+                            "id": "98de7ec40b65b76922e5cd195b982646",
+                            "passes": 8,
+                            "fails": 0,
+                            "name": "vote: already voted message",
+                            "path": "::3. Cast vote::vote: already voted message"
                         }
-                }
+                    }
             }
+        },
+        "checks": {}
     }
 }
