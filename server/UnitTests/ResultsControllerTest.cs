@@ -3,10 +3,12 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Moq;
 using Server.Controllers;
 using Server.Data;
 using Server.DTOs;
 using Server.Models;
+using Server.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,11 +22,8 @@ namespace UnitTests
     public class ResultsControllerTest
     {
         public static IConfiguration configuration { get; set; }
-
         public ControllerContext ControllerContext { get; set; }
-
-        public TestContext TestContext { get; set; } // 🧩 Contexto del test actual
-
+        public TestContext TestContext { get; set; }
 
         public static AppDbContext GetInMemoryDb(string name)
         {
@@ -32,11 +31,10 @@ namespace UnitTests
                 .UseInMemoryDatabase(name)
                 .Options;
 
-            // Crear configuración en memoria
             var inMemorySettings = new Dictionary<string, string>
-                {
-                    {"App:TimeZoneId", "Central Standard Time"}
-                };
+            {
+                {"App:TimeZoneId", "Central Standard Time"}
+            };
 
             configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(inMemorySettings)
@@ -52,7 +50,8 @@ namespace UnitTests
         {
             // Arrange
             var db = GetInMemoryDb(nameof(GetResults_ReturnsNotFound_WhenElectionDoesNotExist));
-            var controller = new ResultsController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ResultsController(db, mockAudit.Object);
 
             // Act
             var result = await controller.GetResults(999, CancellationToken.None);
@@ -82,7 +81,8 @@ namespace UnitTests
             });
             await db.SaveChangesAsync();
 
-            var controller = new ResultsController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ResultsController(db, mockAudit.Object);
 
             // Act
             var result = await controller.GetResults(1, CancellationToken.None);
@@ -126,7 +126,8 @@ namespace UnitTests
 
             await db.SaveChangesAsync();
 
-            var controller = new ResultsController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ResultsController(db, mockAudit.Object);
 
             // Act
             var result = await controller.GetResults(1, CancellationToken.None);
@@ -152,7 +153,8 @@ namespace UnitTests
         {
             // Arrange
             var db = GetInMemoryDb(nameof(GetParticipation_ReturnsNotFound_WhenElectionDoesNotExist));
-            var controller = new ResultsController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ResultsController(db, mockAudit.Object);
 
             // Act
             var result = await controller.GetParticipation(999, CancellationToken.None);
@@ -180,7 +182,8 @@ namespace UnitTests
             });
             await db.SaveChangesAsync();
 
-            var controller = new ResultsController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ResultsController(db, mockAudit.Object);
 
             // Act
             var result = await controller.GetParticipation(1, CancellationToken.None);
@@ -189,7 +192,6 @@ namespace UnitTests
             var badRequest = result as BadRequestObjectResult;
             Assert.IsNotNull(badRequest);
             Assert.AreEqual(400, badRequest.StatusCode);
-
         }
 
         [TestMethod]
@@ -248,7 +250,8 @@ namespace UnitTests
 
             await db.SaveChangesAsync();
 
-            var controller = new ResultsController(db);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new ResultsController(db, mockAudit.Object);
 
             // Act
             var result = await controller.GetParticipation(1, CancellationToken.None);
@@ -267,7 +270,6 @@ namespace UnitTests
             Assert.AreEqual(33.33, dto.NonParticipationPercent);
             Assert.IsTrue(dto.IsClosed);
         }
-
 
         [TestCleanup]
         public void TestCleanup()
@@ -291,7 +293,5 @@ namespace UnitTests
             Console.WriteLine($"📝 Descripción: {description}");
             Console.WriteLine(new string('-', 80));
         }
-
-
     }
 }
