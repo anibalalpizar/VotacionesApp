@@ -20,7 +20,7 @@ public class AuditLogsController : ControllerBase
         _db = db;
     }
 
-    /// GET: /api/audit-logs?page=1&pageSize=20  
+    /// GET: /api/audit-logs
     /// Lista paginada completa
     [HttpGet]
     public async Task<IActionResult> GetAll(
