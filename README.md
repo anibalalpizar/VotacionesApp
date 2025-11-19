@@ -567,11 +567,4 @@ npm run test
 
 ---
 
-## 📝 Próximas Historias de Usuario
-
-- [ ] **HU8:** Como administrador, quiero ver el total de votos por candidato para conocer los resultados de la elección.
-- [ ] **HU9:** Como administrador, quiero ver el porcentaje de votantes que emitieron su voto para evaluar la participación.
-- [ ] **HU10:** Como auditor, quiero ver un registro de acciones críticas para garantizar trazabilidad del proceso.
-
----
-**Última actualización:** 22 Octubre 2025
+**Última actualización:** 19 Nocviembre 2025
