@@ -14,8 +14,8 @@ export const options = {
 const BASE_URL = __ENV.TARGET_URL || 'https://localhost:7290';
 
 const loginPayload = JSON.stringify({
-  UserOrEmail: 'ADMIN-001',
-  Password: 'Admin123!' 
+  UserOrEmail: '123456789',
+  Password: 'Admin123!'
 });
 
 const headers = {
@@ -34,9 +34,10 @@ export default function () {
     'login response is JSON': (r) => 
       (r.headers['Content-Type'] || '').includes('application/json'),
     'login returns token': (r) => {
+      if (r.status !== 200) return false;
       try {
         const body = JSON.parse(r.body);
-        return body.token !== undefined && body.token !== null;
+        return body.token && body.token.length > 0;
       } catch {
         return false;
       }
@@ -55,14 +56,16 @@ export default function () {
 
 export function setup() {
   console.log('='.repeat(60));
-  console.log('Iniciando Smoke Test - Sistema de Votaciones');
+  console.log('SMOKE TEST - Voting System');
   console.log(`Target URL: ${BASE_URL}`);
   console.log(`VUs: ${options.vus}, Duration: ${options.duration}`);
+  console.log(`Thresholds: < 1% failures, 95% < 1s`);
   console.log('='.repeat(60));
 }
 
 export function teardown(data) {
   console.log('='.repeat(60));
-  console.log('Smoke Test completado');
+  console.log('Smoke test completed');
+  console.log('Verify all thresholds passed ✓');
   console.log('='.repeat(60));
 }

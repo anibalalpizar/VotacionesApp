@@ -80,9 +80,14 @@ public class AuditLogsController : ControllerBase
     }
 
     /// GET: /api/audit-logs/actions/{action}
-    [HttpGet("actions/{action}")]
-    public async Task<IActionResult> GetByAction(string action, CancellationToken ct)
+    [HttpGet("by-action")]
+    public async Task<IActionResult> GetByAction([FromQuery] string action, CancellationToken ct)
     {
+        if (string.IsNullOrWhiteSpace(action))
+        {
+            return BadRequest(new { message = "La acción es requerida" });
+        }
+
         var logs = await _db.AuditLogs
             .Include(a => a.User)
             .AsNoTracking()

@@ -84,25 +84,6 @@ const data = {
         },
       ],
     },
-    {
-      title: "Reportes",
-      url: "/dashboard/reports/stats",
-      icon: BarChart3,
-      items: [
-        {
-          title: "Estadísticas",
-          url: "/dashboard/reports/stats",
-        },
-        {
-          title: "Auditoría",
-          url: "/dashboard/reports/audit",
-        },
-        {
-          title: "Exportar Datos",
-          url: "/dashboard/reports/export",
-        },
-      ],
-    },
   ],
 }
 

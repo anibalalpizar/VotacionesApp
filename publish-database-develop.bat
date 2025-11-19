@@ -91,11 +91,6 @@ sqlcmd -S %SERVER% -d %DATABASE% -E -i %DB_FOLDER%\04_insert_votes.sql
 if %errorlevel% neq 0 goto error
 echo.
 
-echo [5/5] Inserting Audit Logs...
-sqlcmd -S %SERVER% -d %DATABASE% -E -i %DB_FOLDER%\05_insert_auditlog.sql
-if %errorlevel% neq 0 goto error
-echo.
-
 echo ============================
 echo   SUCCESS!
 echo   Database published successfully!

@@ -35,6 +35,7 @@ namespace UnitTests
         private readonly Mock<AppDbContext> _mockDb;
         private readonly Mock<IJwtTokenService> _mockJwt;
         private readonly Mock<IMailSender> _mockEmail;
+        private readonly Mock<IAuditService> _mockAudit;
         private readonly AuthController _controller;
 
         public AuthControllerTests()
@@ -47,8 +48,9 @@ namespace UnitTests
             _mockDb = new Mock<AppDbContext>(options);
             _mockJwt = new Mock<IJwtTokenService>();
             _mockEmail = new Mock<IMailSender>();
+            _mockAudit = new Mock<IAuditService>();
 
-            _controller = new AuthController(context, _mockJwt.Object, _mockEmail.Object);
+            _controller = new AuthController(context, _mockJwt.Object, _mockEmail.Object, _mockAudit.Object);
         }
 
         // ---------------------------------------------------------------------
@@ -84,7 +86,8 @@ namespace UnitTests
             mockJwt.SetupGet(j => j.ExpiresInSeconds).Returns(3600);
 
             var mockEmail = new Mock<IMailSender>();
-            var controller = new AuthController(context, mockJwt.Object, mockEmail.Object);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new AuthController(context, mockJwt.Object, mockEmail.Object, mockAudit.Object);
 
             var req = new LoginRequest
             {
@@ -127,7 +130,8 @@ namespace UnitTests
 
             var mockJwt = new Mock<IJwtTokenService>();
             var mockEmail = new Mock<IMailSender>();
-            var controller = new AuthController(context, mockJwt.Object, mockEmail.Object);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new AuthController(context, mockJwt.Object, mockEmail.Object, mockAudit.Object);
 
             var req = new LoginRequest
             {
@@ -173,7 +177,8 @@ namespace UnitTests
 
             var mockJwt = new Mock<IJwtTokenService>();
             var mockEmail = new Mock<IMailSender>();
-            var controller = new AuthController(context, mockJwt.Object, mockEmail.Object);
+            var mockAudit = new Mock<IAuditService>();
+            var controller = new AuthController(context, mockJwt.Object, mockEmail.Object, mockAudit.Object);
 
             var req = new ChangePasswordRequest
             {
@@ -251,8 +256,9 @@ namespace UnitTests
             var mockEmail = new Mock<IMailSender>();
             mockEmail.Setup(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                      .Returns(Task.CompletedTask);
+            var mockAudit = new Mock<IAuditService>();
 
-            var controller = new AuthController(context, mockJwt.Object, mockEmail.Object);
+            var controller = new AuthController(context, mockJwt.Object, mockEmail.Object, mockAudit.Object);
 
             var req = new ForgotPasswordRequest
             {
