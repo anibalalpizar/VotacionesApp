@@ -196,7 +196,7 @@ public class VotesController : ControllerBase
                 <p>Tu voto fue registrado correctamente en la elección <b>{election.Name}</b>.</p>
                 <p>Candidato seleccionado: <b>{candidate.Name}</b> ({candidate.Party})</p>
                 <p>Gracias por participar.</p>";
-            await _mail.SendAsync(user.Email, "Confirmación de voto", body);
+           // await _mail.SendAsync(user.Email, "Confirmación de voto", body);
         }
         catch
         {
