@@ -1,7 +1,7 @@
 "use client"
 
 import type * as React from "react"
-import { SquareTerminal, Vote, BarChart3, UserPlus } from "lucide-react"
+import { SquareTerminal, Vote, BarChart3, UserPlus, Shield } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
@@ -83,6 +83,12 @@ const data = {
           url: "/dashboard/candidates",
         },
       ],
+    },
+    {
+      title: "Auditoría",
+      url: "/dashboard/audit",
+      icon: Shield,
+      adminOnly: true,
     },
   ],
 }
