@@ -193,6 +193,7 @@ namespace UnitTests
             Assert.IsFalse(canVote);
         }
 
+        [TestCleanup]
         public void TestCleanup()
         {
             var testName = TestContext.TestName;
