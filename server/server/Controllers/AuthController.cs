@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using server.DTOs;
 using Server.Data;
+using Server.Models;
 using Server.Models.DTOs;
 using Server.Services;
 using Server.Utils;
@@ -218,5 +219,131 @@ public class AuthController : ControllerBase
             // No revelamos detalle, pero tampoco bitacorizamos porque no sabemos si llegó a guardarse algo
             return Ok(new { message = "Si el correo existe, se enviará una contraseña temporal." });
         }
+    }
+
+    /// <summary>
+    /// GET: /api/users
+    /// Obtiene la lista completa de usuarios con paginación
+    /// </summary>
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetAll(
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 50,
+    [FromQuery] string? role = null,
+    CancellationToken ct = default)
+    {
+        page = page < 1 ? 1 : page;
+        pageSize = pageSize is < 1 or > 200 ? 50 : pageSize;
+
+        var query = _db.Users
+            .AsNoTracking()
+            .OrderByDescending(u => u.CreatedAt)
+            .AsQueryable();
+
+        // Filtrar por rol si se proporciona
+        if (!string.IsNullOrWhiteSpace(role))
+        {
+            if (Enum.TryParse<UserRole>(role, true, out var parsedRole))
+            {
+                query = query.Where(u => u.Role == parsedRole);
+            }
+            else
+            {
+                return BadRequest($"El rol '{role}' no es válido. Roles válidos: ADMIN, VOTER, AUDITOR.");
+            }
+        }
+
+        var total = await query.CountAsync(ct);
+
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(u => new
+            {
+                userId = u.UserId,
+                identification = u.Identification,
+                fullName = u.FullName,
+                email = u.Email,
+                role = u.Role,
+                createdAt = u.CreatedAt
+            })
+            .ToListAsync(ct);
+
+        return Ok(new { page, pageSize, total, items });
+    }
+
+
+    /// <summary>
+    /// GET: /api/users/simple
+    /// Obtiene una lista simple de usuarios sin paginación (para selects/combos)
+    /// </summary>
+    [HttpGet("simple")]
+    public async Task<IActionResult> GetSimpleList(
+    [FromQuery] string? role = null,
+    CancellationToken ct = default)
+    {
+        var query = _db.Users
+            .AsNoTracking()
+            .OrderBy(u => u.FullName)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(role))
+        {
+            if (Enum.TryParse<UserRole>(role, true, out var parsedRole))
+            {
+                query = query.Where(u => u.Role == parsedRole);
+            }
+            else
+            {
+                return BadRequest($"El rol '{role}' no es válido. Roles válidos: ADMIN, VOTER, AUDITOR.");
+            }
+        }
+
+        var items = await query
+            .Select(u => new
+            {
+                userId = u.UserId,
+                fullName = u.FullName,
+                email = u.Email,
+                role = u.Role
+            })
+            .ToListAsync(ct);
+
+        return Ok(items);
+    }
+
+
+    /// <summary>
+    /// GET: /api/users/{userId}
+    /// Obtiene los detalles de un usuario específico
+    /// </summary>
+    [HttpGet("{userId:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(int userId, CancellationToken ct)
+    {
+        var user = await _db.Users
+            .AsNoTracking()
+            .Where(u => u.UserId == userId)
+            .Select(u => new
+            {
+                userId = u.UserId,
+                identification = u.Identification,
+                fullName = u.FullName,
+                email = u.Email,
+                role = u.Role,
+                createdAt = u.CreatedAt
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (user is null)
+            return NotFound(new { error = "Usuario no encontrado." });
+
+        return Ok(user);
     }
 }
