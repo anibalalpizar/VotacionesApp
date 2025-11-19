@@ -1,6 +1,7 @@
 import { AuthGuard } from "@/components/auth-guard"
 import { getCurrentUser } from "@/lib/auth"
 import { AdminDashboard } from "@/components/dashboard/admin-dashboard"
+import { AuditorDashboard } from "@/components/dashboard/auditor-dashboard"
 import { Vote, Users, Shield } from "lucide-react"
 
 export default async function DashboardPage() {
@@ -46,15 +47,11 @@ export default async function DashboardPage() {
 
         {user?.role === "ADMIN" && <AdminDashboard />}
 
+        {user?.role === "AUDITOR" && <AuditorDashboard />}
+
         {user?.role === "VOTER" && (
           <div className="text-muted-foreground">
             Panel de votante - Próximamente
-          </div>
-        )}
-
-        {user?.role === "AUDITOR" && (
-          <div className="text-muted-foreground">
-            Panel de auditor - Próximamente
           </div>
         )}
       </div>
