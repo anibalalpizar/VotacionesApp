@@ -10,39 +10,39 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Obtener connection string y convertir si es formato postgresql://
+var env = builder.Environment.EnvironmentName;
 var connectionString = builder.Configuration.GetConnectionString("Default");
 
-if (!string.IsNullOrWhiteSpace(connectionString) && connectionString.StartsWith("postgresql://"))
+if (builder.Environment.IsProduction())
 {
-    try
+    Console.WriteLine("[DB] Using PostgreSQL (Production)");
+
+    // Convertir postgresql:// a Npgsql si viene en formato URL
+    if (connectionString!.StartsWith("postgresql://"))
     {
-        // Convertir postgresql://user:password@host:port/database a formato Npgsql
         var uri = new Uri(connectionString);
-        var host = uri.Host;
-        var port = uri.Port > 0 ? uri.Port : 5432;
-        var database = uri.AbsolutePath.TrimStart('/');
         var userInfo = uri.UserInfo.Split(':');
-        var user = userInfo[0];
-        var password = userInfo.Length > 1 ? userInfo[1] : "";
 
-        connectionString = $"Host={host};Port={port};Database={database};Username={user};Password={password};SSL Mode=Require";
+        connectionString =
+            $"Host={uri.Host};" +
+            $"Port={uri.Port};" +
+            $"Database={uri.AbsolutePath.TrimStart('/')};" +
+            $"Username={userInfo[0]};" +
+            $"Password={userInfo[1]};" +
+            $"SSL Mode=Require;Trust Server Certificate=true;";
+    }
 
-        Console.WriteLine($"[DB] Converted postgresql URL to Npgsql format");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[DB] Error converting connection string: {ex.Message}");
-    }
+    builder.Services.AddDbContext<AppDbContext>(opt =>
+        opt.UseNpgsql(connectionString));
+}
+else
+{
+    Console.WriteLine("[DB] Using SQL Server (Local)");
+
+    builder.Services.AddDbContext<AppDbContext>(opt =>
+        opt.UseSqlServer(connectionString));
 }
 
-if (string.IsNullOrWhiteSpace(connectionString))
-    throw new InvalidOperationException("No connection string found in configuration.");
-
-Console.WriteLine($"[DB] Connection string configured (SSL Mode enabled)");
-
-builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseNpgsql(connectionString));
 
 builder.Services.AddScoped<IMailSender, SmtpMailSender>();
 builder.Services.AddSingleton<IEmailDomainValidator, EmailDomainValidator>();
