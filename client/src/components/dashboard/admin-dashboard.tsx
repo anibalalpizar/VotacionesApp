@@ -31,6 +31,14 @@ interface Election {
   voteCount: number
 }
 
+type ClosedElectionsResult = {
+  success: boolean
+  data?: {
+    items: Election[]
+  }
+  message?: string
+}
+
 export function AdminDashboard() {
   const [open, setOpen] = useState(false)
   const [selectedElectionId, setSelectedElectionId] = useState("")
@@ -42,10 +50,11 @@ export function AdminDashboard() {
     async function loadClosedElections() {
       try {
         setLoading(true)
-        const result = await getClosedElectionsAction()
+        const result = await getClosedElectionsAction()  as ClosedElectionsResult
         console.log("Closed Elections Result:", result)
 
         if (result.success && result.data) {
+
           setElections(result.data.items)
         } else {
           setError(result.message || "Error al cargar las elecciones")
@@ -102,12 +111,12 @@ export function AdminDashboard() {
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-6 w-6 text-muted-foreground" />
                 <h2 className="text-2xl font-bold tracking-tight">
-                  {selectedElection.name}
+                  {selectedElection!.name}
                 </h2>
               </div>
               <p className="text-sm text-muted-foreground">
                 Reporte de participación electoral • Cerró el{" "}
-                {new Date(selectedElection.endDateUtc).toLocaleDateString()}
+                {new Date(selectedElection!.endDateUtc).toLocaleDateString()}
               </p>
             </div>
             <div className="flex-shrink-0">
@@ -119,7 +128,7 @@ export function AdminDashboard() {
                     aria-expanded={open}
                     className="w-[300px] justify-between"
                   >
-                    {selectedElection.name}
+                    {selectedElection!.name}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
