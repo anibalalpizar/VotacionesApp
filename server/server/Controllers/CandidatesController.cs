@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using Server.Data;
-using Server.Models;
 using Server.DTOs;
+using Server.Models;
 using Server.Services;
 using Server.Utils;
 
@@ -132,8 +132,8 @@ public class CandidatesController : ControllerBase
             _db.Candidates.Add(entity);
             await _db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException ex) when (ex.InnerException is SqlException sql &&
-                                           (sql.Number == 2601 || sql.Number == 2627))
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException pg &&
+                                           (pg.SqlState == "23505" || pg.SqlState == "23514"))
         {
             return Conflict(new { message = "Ya existe un candidato con ese nombre en esta elección." });
         }
@@ -217,8 +217,8 @@ public class CandidatesController : ControllerBase
         {
             await _db.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException ex) when (ex.InnerException is SqlException sql &&
-                                           (sql.Number == 2601 || sql.Number == 2627))
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException pg &&
+                                           (pg.SqlState == "23505" || pg.SqlState == "23514"))
         {
             // Índice único (ElectionId, Name) violado
             return Conflict(new { message = "Ya existe otro candidato con ese nombre en esa elección." });

@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Data.SqlClient;
 using Server.Data;
 using Server.Models;
 using Server.Models.DTOs;      // AdminCreateUserDto
