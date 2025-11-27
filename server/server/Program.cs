@@ -11,7 +11,7 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+    opt.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddScoped<IMailSender, SmtpMailSender>();
 builder.Services.AddSingleton<IEmailDomainValidator, EmailDomainValidator>();
@@ -68,7 +68,24 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.Configure<SmtpOptions>(builder.Configuration.GetSection("Smtp"));
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+            ?? new[] { "http://localhost:3000" };
+
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+});
+
 var app = builder.Build();
+
+
+app.UseCors();
 
 using (var scope = app.Services.CreateScope())
 {

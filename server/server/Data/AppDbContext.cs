@@ -43,12 +43,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasKey(x => x.ElectionId);
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
 
-            // Fuerza datetimeoffset(0..7). 7 es el máximo (recomendado).
-            e.Property(x => x.StartDate).HasColumnType("datetimeoffset(0)").IsRequired();
-            e.Property(x => x.EndDate).HasColumnType("datetimeoffset(0)").IsRequired();
+            e.Property(x => x.StartDate).IsRequired();
+            e.Property(x => x.EndDate).IsRequired();
         });
-
-
 
         // Candidates (PK int, FK -> Elections int)
         b.Entity<Candidate>(e =>
@@ -75,20 +72,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.ToTable("Votes");
             e.HasKey(x => x.VoteId);
             e.Property(x => x.VoteId).ValueGeneratedOnAdd();
+
             e.HasOne(x => x.Voter)
                 .WithMany()
                 .HasForeignKey(x => x.VoterId)
                 .OnDelete(DeleteBehavior.NoAction);
+
             e.HasOne(x => x.Election)
                 .WithMany()
                 .HasForeignKey(x => x.ElectionId)
                 .OnDelete(DeleteBehavior.NoAction);
+
             e.HasOne(x => x.Candidate)
                 .WithMany()
                 .HasForeignKey(x => x.CandidateId)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            //Garantizar 1 voto por Voter -> Election
             e.HasIndex(x => new { x.VoterId, x.ElectionId }).IsUnique();
         });
 
@@ -100,7 +99,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.AuditId).ValueGeneratedOnAdd();
             e.Property(x => x.Action).HasMaxLength(50).IsRequired();
             e.Property(x => x.Details).HasMaxLength(255);
-            e.Property(x => x.Timestamp).HasDefaultValueSql("GETDATE()");
+
+            e.Property(x => x.Timestamp).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
             e.HasOne(x => x.User)
                 .WithMany()
                 .HasForeignKey(x => x.UserId)
