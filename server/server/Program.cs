@@ -147,11 +147,12 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Votaciones API v1");
+    c.RoutePrefix = string.Empty; // Hacer swagger la raíz
+});
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
