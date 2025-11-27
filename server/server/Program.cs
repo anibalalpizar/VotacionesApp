@@ -10,14 +10,45 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Obtener connection string y convertir si es formato postgresql://
+var connectionString = builder.Configuration.GetConnectionString("Default");
+
+if (!string.IsNullOrWhiteSpace(connectionString) && connectionString.StartsWith("postgresql://"))
+{
+    try
+    {
+        // Convertir postgresql://user:password@host:port/database a formato Npgsql
+        var uri = new Uri(connectionString);
+        var host = uri.Host;
+        var port = uri.Port > 0 ? uri.Port : 5432;
+        var database = uri.AbsolutePath.TrimStart('/');
+        var userInfo = uri.UserInfo.Split(':');
+        var user = userInfo[0];
+        var password = userInfo.Length > 1 ? userInfo[1] : "";
+
+        connectionString = $"Host={host};Port={port};Database={database};Username={user};Password={password};SSL Mode=Require";
+
+        Console.WriteLine($"[DB] Converted postgresql URL to Npgsql format");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[DB] Error converting connection string: {ex.Message}");
+    }
+}
+
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("No connection string found in configuration.");
+
+Console.WriteLine($"[DB] Connection string configured (SSL Mode enabled)");
+
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+    opt.UseNpgsql(connectionString));
 
 builder.Services.AddScoped<IMailSender, SmtpMailSender>();
 builder.Services.AddSingleton<IEmailDomainValidator, EmailDomainValidator>();
-
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuditService, AuditService>();
+
 // Autenticación JWT
 var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!);
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -67,14 +98,12 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 builder.Services.Configure<SmtpOptions>(builder.Configuration.GetSection("Smtp"));
-
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
         var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
             ?? new[] { "http://localhost:3000" };
-
         policy.WithOrigins(allowedOrigins)
             .AllowAnyMethod()
             .AllowAnyHeader()
@@ -83,30 +112,38 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
-
-
 app.UseCors();
 
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    // Crea la BD y tablas si no existen
-    await db.Database.EnsureCreatedAsync();
-    // Ver qué cadena está usando
-    Console.WriteLine($"[DB] {db.Database.GetDbConnection().ConnectionString}");
-    // Seed admin si no existe
-    var adminEmail = "admin@utn.ac.cr";
-    if (!await db.Users.AnyAsync(u => u.Email == adminEmail))
+
+    try
     {
-        db.Users.Add(new User
+        // Crea la BD y tablas si no existen
+        await db.Database.EnsureCreatedAsync();
+        Console.WriteLine($"[DB] Database initialized successfully");
+
+        // Seed admin si no existe
+        var adminEmail = "admin@utn.ac.cr";
+        if (!await db.Users.AnyAsync(u => u.Email == adminEmail))
         {
-            Identification = "ADMIN-001",
-            FullName = "Administrador del Sistema",
-            Email = adminEmail,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
-            Role = UserRole.ADMIN
-        });
-        await db.SaveChangesAsync();
+            db.Users.Add(new User
+            {
+                Identification = "ADMIN-001",
+                FullName = "Administrador del Sistema",
+                Email = adminEmail,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
+                Role = UserRole.ADMIN
+            });
+            await db.SaveChangesAsync();
+            Console.WriteLine($"[DB] Admin user created");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[DB] Error during initialization: {ex.Message}");
+        throw;
     }
 }
 
