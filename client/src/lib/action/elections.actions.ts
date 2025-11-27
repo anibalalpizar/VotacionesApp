@@ -100,6 +100,8 @@ export async function createElectionAction(formData: FormData) {
     const API_BASE_URL =
       process.env.NEXT_PUBLIC_API_URL || "https://localhost:7290"
 
+      console.log("MAKING A REQUEST TO", API_BASE_URL)
+
     const response = await fetch(`${API_BASE_URL}/api/Elections`, {
       method: "POST",
       headers: {
@@ -108,6 +110,11 @@ export async function createElectionAction(formData: FormData) {
       },
       body: JSON.stringify(electionData),
     })
+
+    console.log("STATUS:", response.status)
+    console.log("STATUS TEXT:", response.statusText)
+    const rawText = await response.text()
+    console.log("RAW RESPONSE TEXT:", rawText)
 
     if (!response.ok) {
       let errorMessage = "Error al crear la elección. Intente nuevamente."

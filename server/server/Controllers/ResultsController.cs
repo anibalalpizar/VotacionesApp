@@ -74,8 +74,8 @@ public class ResultsController : ControllerBase
         {
             ElectionId = election.ElectionId,
             ElectionName = election.Name,
-            StartDateUtc = election.StartDate,
-            EndDateUtc = election.EndDate,
+            StartDateUtc = election.StartDate?.ToString("o"),
+            EndDateUtc = election.EndDate?.ToString("o"),
             IsClosed = true,
             TotalVotes = totalVotes,
             TotalCandidates = items.Count,
