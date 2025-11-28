@@ -21,12 +21,15 @@ public class VotersController : ControllerBase
     private readonly AppDbContext _db;
     private readonly IMailSender _email;
     private readonly IEmailDomainValidator _emailValidator;
+    private readonly IAuditService _audit;
 
-    public VotersController(AppDbContext db, IMailSender email, IEmailDomainValidator emailValidator)
+
+    public VotersController(AppDbContext db, IMailSender email, IEmailDomainValidator emailValidator, IAuditService audit)
     {
         _db = db;
         _email = email;
         _emailValidator = emailValidator;
+        _audit = audit;
     }
 
     /// Crear votante con contraseña temporal enviada al correo.
@@ -76,52 +79,68 @@ public class VotersController : ControllerBase
             TemporalPassword = tempHash
         };
 
-        // 5. Transacción: guardar solo si el correo se envía bien
+        // 5. Guardar usuario EN TRANSACCIÓN (sin correo)
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
         try
         {
             _db.Users.Add(user);
             await _db.SaveChangesAsync(ct);
 
-            // Intentar enviar correo
-            var body = $@"
-                <p>Hola {user.FullName},</p>
-                <p>Tu cuenta en la aplicación de votaciones de la UTN fue creada por un administrador.</p>
-                <p>Tu <b>contraseña temporal</b> es: <b>{tempPlain}</b></p>
-                <p>Por seguridad, inicia sesión con tú cédula y con esta contraseña y cámbiala de inmediato.</p>
-            ";
-            await _email.SendAsync(user.Email, "Tu contraseña temporal", body);
-
+            // COMMIT la transacción ANTES de enviar correo
             await tx.CommitAsync(ct);
 
-            return CreatedAtAction(nameof(GetById), new { id = user.UserId }, new
-            {
-                userId = user.UserId,
-                identification = user.Identification,
-                fullName = user.FullName,
-                email = user.Email,
-                role = user.Role.ToString()
-            });
-        }
-        catch (SmtpException smtpEx)
-        {
-            await tx.RollbackAsync(ct);
-            return BadRequest(new
-            {
-                message = "Error al enviar el correo. Intenta más tarde.",
-                error = smtpEx.StatusCode.ToString()
-            });
+            Console.WriteLine($"[DB] Usuario guardado exitosamente: {user.UserId}");
         }
         catch (Exception ex)
         {
             await tx.RollbackAsync(ct);
+            Console.WriteLine($"[DB ERROR] Error guardando usuario: {ex.Message}");
+
             return BadRequest(new
             {
-                message = "No se pudo enviar el correo.",
+                message = "Error al guardar el usuario.",
                 error = ex.Message
             });
         }
 
+        // 6. Enviar correo FUERA de la transacción
+        var emailSent = false;
+        try
+        {
+            var body = $@"
+            <p>Hola {user.FullName},</p>
+            <p>Tu cuenta en la aplicación de votaciones de la UTN fue creada por un administrador.</p>
+            <p>Tu <b>contraseña temporal</b> es: <b>{tempPlain}</b></p>
+            <p>Por seguridad, inicia sesión con tú cédula y con esta contraseña y cámbiala de inmediato.</p>
+        ";
+
+            await _email.SendAsync(user.Email, "Tu contraseña temporal", body, ct);
+            emailSent = true;
+
+            Console.WriteLine($"[MAIL] Correo enviado exitosamente a {user.Email}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MAIL ERROR] Fallo al enviar correo a {user.Email}: {ex.Message}");
+
+        }
+
+        // 7. Auditar
+        await _audit.LogAsync(
+            action: AuditActions.UserCreated,
+            details: $"Usuario creado: {user.Email} (Correo enviado: {emailSent})"
+        );
+
+        // 8. Responder (usuario creado exitosamente incluso si fallo el correo)
+        return CreatedAtAction(nameof(GetById), new { id = user.UserId }, new
+        {
+            userId = user.UserId,
+            identification = user.Identification,
+            fullName = user.FullName,
+            email = user.Email,
+            role = user.Role.ToString(),
+            emailStatus = emailSent ? "enviado" : "pendiente"
+        });
     }
 
     /// Obtener usuario por Id

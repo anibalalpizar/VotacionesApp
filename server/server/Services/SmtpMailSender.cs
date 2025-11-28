@@ -30,7 +30,7 @@ public sealed class SmtpMailSender : IMailSender
                 UseDefaultCredentials = false,
                 Credentials = new NetworkCredential(_opt.User, _opt.Password),
                 DeliveryMethod = SmtpDeliveryMethod.Network,
-                Timeout = 10000
+                Timeout = 30000
             };
 
             Console.WriteLine($"[SMTP] Enviando correo a {to} desde {fromEmail}");
