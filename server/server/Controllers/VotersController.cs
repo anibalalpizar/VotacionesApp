@@ -1,13 +1,14 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Server.Data;
+using Server.DTOs;
 using Server.Models;
 using Server.Models.DTOs;      // AdminCreateUserDto
 using Server.Services;         // IMailSender, IEmailDomainValidator
 using Server.Utils;            // PasswordGenerator
-using Server.DTOs;
+using System.ComponentModel.DataAnnotations;
+using System.Net.Mail;
 
 
 
@@ -102,10 +103,18 @@ public class VotersController : ControllerBase
                 role = user.Role.ToString()
             });
         }
+        catch (SmtpException smtpEx)
+        {
+            await tx.RollbackAsync(ct);
+            return BadRequest(new
+            {
+                message = "Error al enviar el correo. Intenta más tarde.",
+                error = smtpEx.StatusCode.ToString()
+            });
+        }
         catch (Exception ex)
         {
             await tx.RollbackAsync(ct);
-
             return BadRequest(new
             {
                 message = "No se pudo enviar el correo.",
