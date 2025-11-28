@@ -53,23 +53,7 @@ public sealed class SmtpMailSender : IMailSender
             Console.WriteLine($"[SMTP ❌] Operación cancelada: {ex.Message}");
             throw;
         }
-        catch (SmtpFailedRecipientException ex)
-        {
-            Console.WriteLine($"[SMTP ❌] Destinatario rechazado: {ex.FailedRecipient}");
-            Console.WriteLine($"[SMTP ❌] Código de error: {ex.StatusCode}");
-            Console.WriteLine($"[SMTP ❌] Mensaje: {ex.Message}");
-            throw;
-        }
-        catch (SmtpFailedRecipientsException ex)
-        {
-            Console.WriteLine($"[SMTP ❌] Múltiples destinatarios rechazados:");
-            foreach (var failedRecipient in ex.InnerExceptions.OfType<SmtpFailedRecipientException>())
-            {
-                Console.WriteLine($"  - {failedRecipient.FailedRecipient}: {failedRecipient.StatusCode}");
-            }
-            throw;
-        }
-        catch (SmtpException ex)
+        catch (SmtpException ex) when (ex is SmtpFailedRecipientsException failedRecipientsEx)
         {
             Console.WriteLine($"[SMTP ❌] Error SMTP específico:");
             Console.WriteLine($"  - StatusCode: {ex.StatusCode}");
