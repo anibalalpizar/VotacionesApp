@@ -102,11 +102,17 @@ public class VotersController : ControllerBase
                 role = user.Role.ToString()
             });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             await tx.RollbackAsync(ct);
-            return BadRequest(new { message = "No se pudo enviar el correo. No se creó el usuario." });
+
+            return BadRequest(new
+            {
+                message = "No se pudo enviar el correo.",
+                error = ex.Message
+            });
         }
+
     }
 
     /// Obtener usuario por Id
