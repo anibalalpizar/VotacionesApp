@@ -26,13 +26,18 @@ if (isPostgreSQL)
         var uri = new Uri(connectionString);
         var userInfo = uri.UserInfo.Split(':');
 
+        // Si el puerto es -1, usar 5432 por defecto
+        int port = uri.Port == -1 ? 5432 : uri.Port;
+
         connectionString =
             $"Host={uri.Host};" +
-            $"Port={uri.Port};" +
+            $"Port={port};" +
             $"Database={uri.AbsolutePath.TrimStart('/')};" +
             $"Username={userInfo[0]};" +
             $"Password={userInfo[1]};" +
             $"SSL Mode=Require;Trust Server Certificate=true;";
+
+        Console.WriteLine($"[DB] Converted connection string: Host={uri.Host};Port={port};Database={uri.AbsolutePath.TrimStart('/')}");
     }
 
     builder.Services.AddDbContext<AppDbContext>(opt =>
@@ -45,7 +50,6 @@ else
     builder.Services.AddDbContext<AppDbContext>(opt =>
         opt.UseSqlServer(connectionString));
 }
-
 
 builder.Services.AddScoped<IMailSender, SmtpMailSender>();
 builder.Services.AddSingleton<IEmailDomainValidator, EmailDomainValidator>();
