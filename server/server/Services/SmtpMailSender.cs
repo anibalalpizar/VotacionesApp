@@ -15,6 +15,14 @@ public sealed class SmtpMailSender : IMailSender
             // Parsear el From correctamente
             var (fromEmail, fromName) = ParseEmailAddress(_opt.From);
 
+            Console.WriteLine($"[SMTP DEBUG] === INICIANDO ENVÍO DE CORREO ===");
+            Console.WriteLine($"[SMTP DEBUG] Host: {_opt.Host}");
+            Console.WriteLine($"[SMTP DEBUG] Port: {_opt.Port}");
+            Console.WriteLine($"[SMTP DEBUG] User: {_opt.User}");
+            Console.WriteLine($"[SMTP DEBUG] EnableSSL: {_opt.EnableSsl}");
+            Console.WriteLine($"[SMTP DEBUG] Para: {to}");
+            Console.WriteLine($"[SMTP DEBUG] Desde: {fromEmail}");
+
             using var msg = new MailMessage
             {
                 From = new MailAddress(fromEmail, fromName),
@@ -33,27 +41,61 @@ public sealed class SmtpMailSender : IMailSender
                 Timeout = 30000
             };
 
-            Console.WriteLine($"[SMTP] Enviando correo a {to} desde {fromEmail}");
+            Console.WriteLine($"[SMTP DEBUG] Intentando conectar a {_opt.Host}:{_opt.Port}...");
 
             // Usar SendMailAsync que es verdaderamente asincrónico
             await smtp.SendMailAsync(msg, ct);
 
-            Console.WriteLine($"[SMTP] Correo enviado exitosamente a {to}");
+            Console.WriteLine($"[SMTP ✅] Correo enviado exitosamente a {to}");
         }
         catch (OperationCanceledException ex)
         {
-            Console.WriteLine($"[SMTP ERROR] Operación cancelada: {ex.Message}");
+            Console.WriteLine($"[SMTP ❌] Operación cancelada: {ex.Message}");
+            throw;
+        }
+        catch (SmtpFailedRecipientException ex)
+        {
+            Console.WriteLine($"[SMTP ❌] Destinatario rechazado: {ex.FailedRecipient}");
+            Console.WriteLine($"[SMTP ❌] Código de error: {ex.StatusCode}");
+            Console.WriteLine($"[SMTP ❌] Mensaje: {ex.Message}");
+            throw;
+        }
+        catch (SmtpFailedRecipientsException ex)
+        {
+            Console.WriteLine($"[SMTP ❌] Múltiples destinatarios rechazados:");
+            foreach (var failedRecipient in ex.InnerExceptions.OfType<SmtpFailedRecipientException>())
+            {
+                Console.WriteLine($"  - {failedRecipient.FailedRecipient}: {failedRecipient.StatusCode}");
+            }
             throw;
         }
         catch (SmtpException ex)
         {
-            Console.WriteLine($"[SMTP ERROR] Error SMTP: {ex.StatusCode} - {ex.Message}");
+            Console.WriteLine($"[SMTP ❌] Error SMTP específico:");
+            Console.WriteLine($"  - StatusCode: {ex.StatusCode}");
+            Console.WriteLine($"[SMTP ❌] Message: {ex.Message}");
+
+            if (ex.InnerException != null)
+            {
+                Console.WriteLine($"[SMTP ❌] Inner Exception Type: {ex.InnerException.GetType().Name}");
+                Console.WriteLine($"[SMTP ❌] Inner Exception Message: {ex.InnerException.Message}");
+            }
+
             throw;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[SMTP ERROR] Error general: {ex.GetType().Name} - {ex.Message}");
-            Console.WriteLine($"[SMTP ERROR] Stack trace: {ex.StackTrace}");
+            Console.WriteLine($"[SMTP ❌] Error inesperado:");
+            Console.WriteLine($"  - Tipo: {ex.GetType().Name}");
+            Console.WriteLine($"  - Mensaje: {ex.Message}");
+            Console.WriteLine($"  - Stack trace: {ex.StackTrace}");
+
+            if (ex.InnerException != null)
+            {
+                Console.WriteLine($"[SMTP ❌] Inner Exception Type: {ex.InnerException.GetType().Name}");
+                Console.WriteLine($"[SMTP ❌] Inner Exception Message: {ex.InnerException.Message}");
+            }
+
             throw;
         }
     }
