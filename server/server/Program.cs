@@ -13,12 +13,15 @@ var builder = WebApplication.CreateBuilder(args);
 var env = builder.Environment.EnvironmentName;
 var connectionString = builder.Configuration.GetConnectionString("Default");
 
-if (builder.Environment.IsProduction())
+// Detectar automáticamente el tipo de base de datos
+bool isPostgreSQL = connectionString!.Contains("Host=") || connectionString.StartsWith("postgresql://");
+
+if (isPostgreSQL)
 {
-    Console.WriteLine("[DB] Using PostgreSQL (Production)");
+    Console.WriteLine("[DB] Using PostgreSQL");
 
     // Convertir postgresql:// a Npgsql si viene en formato URL
-    if (connectionString!.StartsWith("postgresql://"))
+    if (connectionString.StartsWith("postgresql://"))
     {
         var uri = new Uri(connectionString);
         var userInfo = uri.UserInfo.Split(':');
@@ -37,7 +40,7 @@ if (builder.Environment.IsProduction())
 }
 else
 {
-    Console.WriteLine("[DB] Using SQL Server (Local)");
+    Console.WriteLine("[DB] Using SQL Server");
 
     builder.Services.AddDbContext<AppDbContext>(opt =>
         opt.UseSqlServer(connectionString));
