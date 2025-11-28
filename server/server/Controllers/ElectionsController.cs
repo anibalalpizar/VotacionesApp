@@ -66,8 +66,8 @@ public class ElectionsController : ControllerBase
         {
             ElectionId = e.ElectionId,
             Name = e.Name,
-            StartDateUtc = e.StartDate?.ToString("o") ?? string.Empty,
-            EndDateUtc = e.EndDate?.ToString("o") ?? string.Empty,
+            StartDateUtc = e.StartDate.ToString("o") ?? string.Empty,
+            EndDateUtc = e.EndDate.ToString("o") ?? string.Empty,
             Status = status,
             CandidateCount = candidateCount,
             VoteCount = voteCount,
@@ -344,8 +344,8 @@ public class ElectionsController : ControllerBase
         {
             ElectionId = election.ElectionId,
             ElectionName = election.Name,
-            StartDateUtc = election.StartDate?.ToString("o"),
-            EndDateUtc = election.EndDate?.ToString("o"),
+            StartDateUtc = election.StartDate.ToString("o"),
+            EndDateUtc = election.EndDate.ToString("o"),
             IsClosed = true,
             TotalVotes = totalVotes,
             TotalCandidates = totalCandidates,

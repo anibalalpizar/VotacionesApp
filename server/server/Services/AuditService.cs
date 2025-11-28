@@ -16,15 +16,11 @@ public class AuditService : IAuditService
         _httpContextAccessor = httpContextAccessor;
     }
 
-    /// <summary>
-    /// Registra una acción especificando el userId manualmente
-    /// </summary>
     public async Task LogAsync(int userId, string action, string? details = null, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(action))
             return;
 
-        // Validar que el usuario existe
         var userExists = await _db.Users.AnyAsync(u => u.UserId == userId, ct);
         if (!userExists)
             return;
@@ -34,7 +30,7 @@ public class AuditService : IAuditService
             UserId = userId,
             Action = action.Trim().Length > 50 ? action.Trim()[..50] : action.Trim(),
             Details = details?.Trim().Length > 255 ? details.Trim()[..255] : details?.Trim(),
-            Timestamp = DateTime.Now
+            Timestamp = DateTime.UtcNow // ✅ Cambio importante
         };
 
         _db.AuditLogs.Add(auditLog);
@@ -49,9 +45,6 @@ public class AuditService : IAuditService
         }
     }
 
-    /// <summary>
-    /// Registra una acción obteniendo el userId del token JWT del request actual
-    /// </summary>
     public async Task LogAsync(string action, string? details = null, CancellationToken ct = default)
     {
         var userId = GetCurrentUserId();
@@ -61,16 +54,11 @@ public class AuditService : IAuditService
         }
     }
 
-    /// <summary>
-    /// Obtiene el UserId del claim del token JWT
-    /// </summary>
     private int? GetCurrentUserId()
     {
         var userIdClaim = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
         if (int.TryParse(userIdClaim, out var userId))
             return userId;
-
         return null;
     }
 }

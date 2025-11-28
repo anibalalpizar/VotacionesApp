@@ -47,12 +47,11 @@ public class VotesController : ControllerBase
         return null;
     }
 
-    private static bool IsActiveNow(DateTimeOffset? start, DateTimeOffset? end)
+    private static bool IsActiveNow(DateTime? start, DateTime? end)
     {
         if (start is null || end is null) return false;
-        var nowUtc = DateTimeOffset.UtcNow;
-        return start.Value.ToUniversalTime() <= nowUtc
-            && nowUtc <= end.Value.ToUniversalTime();
+        var nowUtc = DateTime.UtcNow; // ✅ Cambiar de DateTimeOffset
+        return start.Value <= nowUtc && nowUtc <= end.Value;
     }
 
     /// POST: /api/votes

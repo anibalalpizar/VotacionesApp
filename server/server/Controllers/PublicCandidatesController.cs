@@ -49,14 +49,14 @@ public class PublicCandidatesController : ControllerBase
         if (userId is null)
             return Unauthorized(new { message = "No se pudo identificar el usuario." });
 
-        var now = DateTimeOffset.UtcNow;
+        var now = DateTime.UtcNow;
 
         // Elecciones activas por rango de fechas 
         var elections = await _db.Elections
             .AsNoTracking()
             .Where(e =>
                 e.StartDate != null && e.EndDate != null &&
-                e.StartDate!.Value <= now && now <= e.EndDate!.Value)
+                e.StartDate! <= now && now <= e.EndDate!)
             .OrderBy(e => e.StartDate)
             .Select(e => new { e.ElectionId, e.Name })
             .ToListAsync(ct);

@@ -38,8 +38,8 @@ public class ResultsController : ControllerBase
             return NotFound(new { message = "La elección no existe." });
 
         // Solo cuando la elección ya cerró (now > EndDate)
-        var now = DateTimeOffset.UtcNow;
-        var isClosed = election.EndDate.HasValue && now > election.EndDate.Value;
+        var now = DateTime.UtcNow;
+        var isClosed = now > election.EndDate;
         if (!isClosed)
         {
             // Se intentó ver resultados antes del cierre (se puede auditar si quieres)
@@ -74,8 +74,8 @@ public class ResultsController : ControllerBase
         {
             ElectionId = election.ElectionId,
             ElectionName = election.Name,
-            StartDateUtc = election.StartDate?.ToString("o"),
-            EndDateUtc = election.EndDate?.ToString("o"),
+            StartDateUtc = election.StartDate.ToString("o"),
+            EndDateUtc = election.EndDate.ToString("o"),
             IsClosed = true,
             TotalVotes = totalVotes,
             TotalCandidates = items.Count,
@@ -105,8 +105,8 @@ public class ResultsController : ControllerBase
         if (election is null)
             return NotFound(new { message = "La elección no existe." });
 
-        var now = DateTimeOffset.UtcNow;
-        if (!(election.EndDate.HasValue && now > election.EndDate.Value))
+        var now = DateTime.UtcNow;
+        if (now <= election.EndDate)
             return BadRequest(new { message = "El reporte de participación está disponible solo cuando la elección ha finalizado." });
 
         var totalVoters = await _db.Users.CountAsync(u => u.Role == UserRole.VOTER, ct);
@@ -131,8 +131,8 @@ public class ResultsController : ControllerBase
             NotParticipated = notParticipated,
             ParticipationPercent = participationPct,
             NonParticipationPercent = nonParticipationPct,
-            StartDateUtc = election.StartDate?.ToUniversalTime(),
-            EndDateUtc = election.EndDate?.ToUniversalTime(),
+            StartDateUtc = election.StartDate.ToUniversalTime(),
+            EndDateUtc = election.EndDate.ToUniversalTime(),
             IsClosed = true
         };
 
