@@ -119,11 +119,6 @@ export async function registerVoterAction(formData: FormData) {
       body: JSON.stringify(voterData),
     })
 
-    console.log("STATUS:", response.status)
-    console.log("STATUS TEXT:", response.statusText)
-    const rawText = await response.text()
-    console.log("RAW RESPONSE TEXT:", rawText)
-
     if (!response.ok) {
       let errorMessage = "Error al registrar el votante. Intente nuevamente."
 
