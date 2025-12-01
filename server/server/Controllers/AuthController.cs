@@ -17,7 +17,7 @@ public class AuthController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IJwtTokenService _jwt;
-    private readonly IMailSender _email;
+    //private readonly IMailSender _email;
     private readonly IAuditService _audit;
 
     public AuthController(
@@ -28,7 +28,7 @@ public class AuthController : ControllerBase
     {
         _db = db;
         _jwt = jwt;
-        _email = email;
+       // _email = email;
         _audit = audit;
     }
 
@@ -200,7 +200,7 @@ public class AuthController : ControllerBase
             <p>Tu <b>contraseña temporal</b> es: <b>{tempPlain}</b></p>
             <p>Inicia sesión con tu número de cédula y esta contraseña y cámbiala inmediatamente.</p>";
 
-            await _email.SendAsync(user.Email, "Recuperación de contraseña", body);
+            //await _email.SendAsync(user.Email, "Recuperación de contraseña", body);
 
             await tx.CommitAsync(ct);
 
@@ -211,7 +211,8 @@ public class AuthController : ControllerBase
                 details: "Contraseña temporal generada"
             );
 
-            return Ok(new { message = "Si el correo existe, se enviará una contraseña temporal." });
+            // pasa la contrase tgmporeal el el return YA
+            return Ok(new { message = "contraseña temporal: ", tempPassword = tempPlain });
         }
         catch
         {

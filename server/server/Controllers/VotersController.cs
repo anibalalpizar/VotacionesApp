@@ -19,7 +19,7 @@ namespace Server.Controllers;
 public class VotersController : ControllerBase
 {
     private readonly AppDbContext _db;
-    private readonly IMailSender _email;
+    //private readonly IMailSender _email;
     private readonly IEmailDomainValidator _emailValidator;
     private readonly IAuditService _audit;
 
@@ -27,7 +27,7 @@ public class VotersController : ControllerBase
     public VotersController(AppDbContext db, IMailSender email, IEmailDomainValidator emailValidator, IAuditService audit)
     {
         _db = db;
-        _email = email;
+       //_email = email;
         _emailValidator = emailValidator;
         _audit = audit;
     }
@@ -114,7 +114,7 @@ public class VotersController : ControllerBase
             <p>Por seguridad, inicia sesión con tú cédula y con esta contraseña y cámbiala de inmediato.</p>
         ";
 
-            await _email.SendAsync(user.Email, "Tu contraseña temporal", body, ct);
+            //await _email.SendAsync(user.Email, "Tu contraseña temporal", body, ct);
             emailSent = true;
 
             Console.WriteLine($"[MAIL] Correo enviado exitosamente a {user.Email}");
