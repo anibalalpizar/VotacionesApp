@@ -145,7 +145,7 @@ public class AuthController : ControllerBase
 
         var temporalOk = BCrypt.Net.BCrypt.Verify(req.TemporalPassword, user.TemporalPassword);
         if (!temporalOk)
-            return BadRequest(new { error = "La clave temporal no coincide con la enviada por correo." });
+            return BadRequest(new { error = "La clave temporal no es correcta." });
 
         if (string.IsNullOrWhiteSpace(req.NewPassword) || req.NewPassword.Length < 8)
             return BadRequest(new { error = "La nueva contraseña debe tener al menos 8 caracteres." });

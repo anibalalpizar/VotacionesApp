@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useRef, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -13,11 +13,11 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, UserPlus } from "lucide-react"
+import { Loader2, UserPlus, Copy } from "lucide-react"
 import { registerVoterAction } from "@/lib/actions"
 
 export function RegisterVoterForm() {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isPending, startTransition] = useTransition()
   const formRef = useRef<HTMLFormElement>(null)
   const router = useRouter()
 
@@ -26,24 +26,65 @@ export function RegisterVoterForm() {
 
     const formData = new FormData(formRef.current)
 
-    setIsLoading(true)
-
-    try {
+    startTransition(async () => {
       const result = await registerVoterAction(formData)
 
       if (result.success) {
-        toast.success(result.message)
-        formRef.current?.reset()
+        const passwordMatch = result.message.match(
+          /Tu contraseña temporal es: (.+)/
+        )
+        const temporalPassword = passwordMatch ? passwordMatch[1] : null
 
+        if (temporalPassword) {
+          toast.success(
+            <div className="flex flex-col gap-2">
+              <p className="font-semibold">Votante registrado exitosamente</p>
+              <div className="flex flex-col gap-1">
+                <p className="text-sm text-muted-foreground">
+                  Contraseña temporal generada:
+                </p>
+                <div className="flex items-center gap-2 bg-muted p-2 rounded-md">
+                  <code className="flex-1 text-sm font-mono">
+                    {temporalPassword}
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 px-2"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(temporalPassword)
+                        toast.success("Contraseña copiada al portapapeles", {
+                          duration: 2000,
+                        })
+                      } catch (err) {
+                        toast.error("Error al copiar")
+                      }
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Comparte esta contraseña con el votante para que pueda iniciar
+                sesión.
+              </p>
+            </div>,
+            {
+              duration: 15000,
+            }
+          )
+        } else {
+          toast.success(result.message)
+        }
+
+        formRef.current?.reset()
         router.push("/dashboard/voters")
       } else {
         toast.error(result.message)
       }
-    } catch (error) {
-      toast.error("Error inesperado. Intente nuevamente.")
-    } finally {
-      setIsLoading(false)
-    }
+    })
   }
 
   return (
@@ -55,7 +96,8 @@ export function RegisterVoterForm() {
         </CardTitle>
         <CardDescription>
           Todos los campos son obligatorios. La identificación y email deben ser
-          únicos. Se enviará una contraseña temporal al correo del votante.
+          únicos. Se generará una contraseña temporal que podrás copiar y
+          compartir.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -69,7 +111,7 @@ export function RegisterVoterForm() {
                 type="text"
                 placeholder="Ej: 1234567890"
                 required
-                disabled={isLoading}
+                disabled={isPending}
                 className="w-full"
               />
             </div>
@@ -82,7 +124,7 @@ export function RegisterVoterForm() {
                 type="text"
                 placeholder="Ej: Juan Pérez García"
                 required
-                disabled={isLoading}
+                disabled={isPending}
                 className="w-full"
               />
             </div>
@@ -96,7 +138,7 @@ export function RegisterVoterForm() {
               type="email"
               placeholder="Ej: juan.perez@email.com"
               required
-              disabled={isLoading}
+              disabled={isPending}
               className="w-full"
             />
           </div>
@@ -104,11 +146,11 @@ export function RegisterVoterForm() {
           <div className="flex gap-4 pt-4">
             <Button
               type="button"
-              disabled={isLoading}
+              disabled={isPending}
               className="flex-1"
               onClick={handleSubmit}
             >
-              {isLoading ? (
+              {isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Registrando...
@@ -124,7 +166,7 @@ export function RegisterVoterForm() {
             <Button
               type="button"
               variant="outline"
-              disabled={isLoading}
+              disabled={isPending}
               onClick={() => {
                 formRef.current?.reset()
               }}
