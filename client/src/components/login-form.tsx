@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { toast } from "sonner"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -16,35 +16,17 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isPending, startTransition] = useTransition()
   const [showPassword, setShowPassword] = useState(false)
 
   async function handleSubmit(formData: FormData) {
-    setIsLoading(true)
-
-    try {
+    startTransition(async () => {
       const result = await loginAction(formData)
 
       if (result && !result.success) {
         toast.error(result.message)
-      } else if (result && result.success) {
-        toast.success("Inicio de sesión exitoso")
       }
-    } catch (error) {
-      if (
-        error &&
-        typeof error === "object" &&
-        "digest" in error &&
-        typeof error.digest === "string" &&
-        error.digest.includes("NEXT_REDIRECT")
-      ) {
-        toast.success("Inicio de sesión exitoso")
-      } else {
-        toast.error("Error inesperado. Intente nuevamente.")
-      }
-    } finally {
-      setIsLoading(false)
-    }
+    })
   }
 
   return (
@@ -68,7 +50,7 @@ export function LoginForm({
                   type="text"
                   placeholder="12345678"
                   required
-                  disabled={isLoading}
+                  disabled={isPending}
                 />
               </div>
 
@@ -84,14 +66,14 @@ export function LoginForm({
                     type={showPassword ? "text" : "password"}
                     placeholder="********"
                     required
-                    disabled={isLoading}
+                    disabled={isPending}
                     className="pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    disabled={isLoading}
+                    disabled={isPending}
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -107,8 +89,15 @@ export function LoginForm({
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Iniciando sesión...
+                  </>
+                ) : (
+                  "Iniciar Sesión"
+                )}
               </Button>
             </div>
           </form>
