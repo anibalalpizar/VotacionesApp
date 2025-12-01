@@ -132,8 +132,10 @@ public class VotersController : ControllerBase
         );
 
         // 8. Responder (usuario creado exitosamente incluso si fallo el correo)
+        // 8. Responder (usuario creado exitosamente)
         return CreatedAtAction(nameof(GetById), new { id = user.UserId }, new
         {
+            message = $"Votante registrado exitosamente. Tu contraseña temporal es: {tempPlain}",  // ✅ MENSAJE CON LA CONTRASEÑA
             userId = user.UserId,
             identification = user.Identification,
             fullName = user.FullName,
