@@ -108,7 +108,7 @@ export async function registerVoterAction(formData: FormData) {
     const API_BASE_URL =
       process.env.NEXT_PUBLIC_API_URL || "https://localhost:7290"
 
-      console.log("API_BASE_URL:", API_BASE_URL);
+    console.log("API_BASE_URL:", API_BASE_URL)
 
     const response = await fetch(`${API_BASE_URL}/api/Voters`, {
       method: "POST",
@@ -149,13 +149,11 @@ export async function registerVoterAction(formData: FormData) {
         message: errorMessage,
       }
     }
-
-    const result: VoterRegistrationResponse = await response.json()
+    const result = await response.json()
 
     return {
       success: true,
-      message:
-        "Votante registrado exitosamente. Se ha enviado una contraseña temporal por correo.",
+      message: result.message,
       data: result,
     }
   } catch (error) {
