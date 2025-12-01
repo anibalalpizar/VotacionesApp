@@ -212,7 +212,10 @@ public class AuthController : ControllerBase
             );
 
             // pasa la contrase tgmporeal el el return YA
-            return Ok(new { message = "contraseña temporal: ", tempPassword = tempPlain });
+            return Ok(new
+            {
+                message = $"Tu contraseña temporal es: {tempPlain}",
+            });
         }
         catch
         {
